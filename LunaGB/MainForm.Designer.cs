@@ -39,7 +39,7 @@ namespace LunaGB
 
             //File tab options
             MenuItem openRom = fileTab.Items.Add("Open ROM");
-			openRom.Click += (o, e) => OpenRom();
+			openRom.Click += (o, e) => OnClickOpenRom();
 
 			//Emu tab options
 			MenuItem pauseOption = emulationTab.Items.Add("Pause");

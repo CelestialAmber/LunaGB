@@ -12,11 +12,15 @@
     <None Remove="Modern.Forms" />
     <None Remove="MainForm.Designer" />
     <None Remove="Core\" />
+    <None Remove="MonoGame.Framework.DesktopGL" />
+    <None Remove="MonoGame.Forms.DX" />
+    <None Remove="Core\ROMMappers\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Modern.Forms" Version="0.3.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
+    <Folder Include="Core\Cartridges\" />
   </ItemGroup>
 </Project>

@@ -1,4 +1,5 @@
 ﻿using System;
+
 namespace LunaGB.Core
 {
 	public class Emulator
@@ -22,11 +23,26 @@ namespace LunaGB.Core
             cpu = new CPU(memory);
         }
 
-		public void Run() {
-            while (isRunning) {
+		//Loads the specified ROM.
+		public void LoadROM(string romPath) {
+			rom.OpenROM(romPath);
+        }
 
+		//Starts the emulator.
+		public void Start() {
+			//isRunning = true;
+			//Run();
+        }
+
+        public void Run() {
+            while (isRunning) {
+               // if (Input.IsButtonPressed(Button.A)) {
+				//	Console.WriteLine("Pressed A");
+                //}
+				Thread.Sleep(1000);
             }
         }
-	}
+
+    }
 }
 
