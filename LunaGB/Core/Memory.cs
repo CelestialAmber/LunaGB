@@ -13,7 +13,7 @@ namespace LunaGB.Core
 			this.rom = rom;
 		}
 
-		public byte ReadByte(int index) {
+		public byte GetByte(int index) {
 			return 0;
         }
 
