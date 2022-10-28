@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>LunaGB</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -15,12 +15,17 @@
     <None Remove="MonoGame.Framework.DesktopGL" />
     <None Remove="MonoGame.Forms.DX" />
     <None Remove="Core\ROMMappers\" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Modern.Forms" Version="0.3.0" />
+    <None Remove="Avalonia" />
+    <None Remove="Avalonia.Desktop" />
+    <None Remove="SixLabors.ImageSharp" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
     <Folder Include="Core\Cartridges\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="0.10.18" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.10.18" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
   </ItemGroup>
 </Project>

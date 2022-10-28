@@ -1,0 +1,33 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LunaGB.Avalonia.MainWindow"
+        MinWidth="896" MinHeight="618" Width="896" Height="618" WindowStartupLocation="CenterScreen"
+        Title="LunaGB"
+        >
+	     <Grid Background="Gray">
+
+    <Grid.RowDefinitions>
+      <RowDefinition MaxHeight="20"></RowDefinition>
+      <RowDefinition></RowDefinition>
+    </Grid.RowDefinitions>
+
+    <DockPanel Background="White" Grid.Row="0">
+      <Menu DockPanel.Dock="Top">
+                <MenuItem Header="_File">
+                    <MenuItem Header ="_Load ROM" Command="{Binding LoadROM}"/>
+                </MenuItem>
+                <MenuItem Header="_Emulation">
+                    <MenuItem Header ="_Pause" Command="{Binding Nyeh}"/>
+                    <MenuItem Header ="_Stop" Command="{Binding Nyeh}"/>
+                </MenuItem>
+                <MenuItem Header="_Help">
+                    <MenuItem Header ="_About" Command="{Binding Nyeh}"/>
+                </MenuItem>
+            </Menu>
+    </DockPanel>
+
+    <Image x:Name="ImageBox" Grid.Row ="1">
+    </Image>
+    <Button Width="60" Height="20" Background="White" Name="Nyeh" Command="{Binding Nyeh}" Grid.Row="2">Magic</Button>
+</Grid>
+</Window>
