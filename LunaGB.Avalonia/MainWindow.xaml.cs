@@ -5,9 +5,10 @@ using Avalonia.Media.Imaging;
 using Avalonia.Input;
 using Avalonia.Threading;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using LunaGB.Core;
-using SixLabors.ImageSharp.PixelFormats;
+using LunaGB.Graphics;
 
 namespace LunaGB.Avalonia {
     public partial class MainWindow : Window {
@@ -28,27 +29,26 @@ namespace LunaGB.Avalonia {
             KeyDown += OnKeyDown;
 
 
-            SixLabors.ImageSharp.Image<Rgba32> bitmap = new SixLabors.ImageSharp.Image<Rgba32>(160, 144);
+            GBBitmap bitmap = new GBBitmap();
 
             for (int x = 0; x < 160; x++) {
                 for (int y = 0; y < 144; y++) {
                     if ((x + y) % 2 == 0) {
-                        bitmap[x, y] =  new Rgba32((byte)x, (byte)y, 255);
+                        bitmap.SetPixel(x, y, new Color((byte)x, (byte)y, 255));
                     }
                 }
             }
 
-           // imageBox.Source = bitmap.ToAvaloniaBitmap();
+            UpdateDisplay(bitmap.ToByteArray());
         }
 
         protected override bool HandleClosing() {
             return base.HandleClosing();
         }
 
-        public static void Nyeh() {
-            Console.WriteLine("Maaaagic...");
+        public void UpdateDisplay(byte[] data) {
+            imageBox.Source = new Bitmap(new MemoryStream(data));
         }
-
 
         public async void LoadROM() {
             OpenFileDialog dialog = new OpenFileDialog();
@@ -58,11 +58,6 @@ namespace LunaGB.Avalonia {
             gbFilter.Name = "GB/GBC";
             gbFilter.Extensions = new List<string>(new string[] { "gb", "gbc" });
             dialog.Filters.Add(gbFilter);
-
-            dialog.Filters.Add(new FileDialogFilter() {
-                Name = "All files(*.*)",
-                Extensions = { "*.*" }
-            });
 
              var result = await dialog.ShowAsync(this);
 
@@ -93,6 +88,15 @@ namespace LunaGB.Avalonia {
                 imageBox.Source = image;
             }
         }
+
+        public void TogglePause() {
+            emulator.paused = !emulator.paused;
+        }
+
+        public void StopEmulation() {
+            emulator.Stop();
+        }
+
 
         private void OnKeyDown(object? sender, KeyEventArgs e) {
             Console.WriteLine("pressed key");

@@ -1,10 +1,13 @@
 ﻿using System;
-using SkiaSharp;
+using LunaGB.Graphics;
 
 namespace LunaGB.Core
 {
 	public class Display
 	{
+
+		public GBBitmap display;
+
 		public Display()
 		{
 		}

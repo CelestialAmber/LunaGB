@@ -11,7 +11,8 @@ namespace LunaGB.Core
 		Memory memory;
 		ROM rom;
 
-		bool isRunning = false;
+		public bool isRunning = false;
+		public bool paused = false;
 
 
 		public Emulator()
@@ -41,6 +42,11 @@ namespace LunaGB.Core
                 //}
 				Thread.Sleep(1000);
             }
+        }
+
+		//Stops the emulator.
+		public void Stop() {
+            isRunning = false;
         }
 
     }

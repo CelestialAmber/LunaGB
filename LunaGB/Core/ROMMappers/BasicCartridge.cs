@@ -11,6 +11,10 @@ namespace LunaGB.Core.ROMMappers
         public override byte GetByte(int index) {
             return 0;
         }
+
+        public override void SetByte(int index, byte val) {
+
+        }
     }
 }
 

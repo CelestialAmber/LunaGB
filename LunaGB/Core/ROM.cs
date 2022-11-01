@@ -1,9 +1,42 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using LunaGB.Core.ROMMappers;
 
 namespace LunaGB.Core
 {
+	public enum ROMMapper {
+		Basic = 0x0,
+		MBC1 = 0x1,
+		MBC1Ram = 0x2,
+		MBC1RamBattery = 0x3,
+		MBC2 = 0x5,
+		MBC2Battery = 0x6,
+		RomRam = 0x8,
+		RomRamBattery = 0x9,
+		MMM01 = 0xB,
+		MMM01Ram = 0xC,
+		MMM01RamBattery = 0xD,
+		MBC3TimerBattery = 0xF,
+		MBC3TimerRamBattery = 0x10,
+		MBC3 = 0x11,
+		MBC3Ram = 0x12,
+		MBC3RamBattery = 0x13,
+		MBC5 = 0x19,
+		MBC5Ram = 0x1A,
+		MBC5RamBattery = 0x1B,
+		MBC5Rumble = 0x1C,
+		MBC5RumbleRam = 0x1D,
+		MBC5RumbleRamBattery = 0x1E,
+		MBC6 = 0x20,
+		MBC7 = 0x22,
+		PocketCamera = 0xFC,
+		BandaiTama5 = 0xFD,
+		HuC3 = 0xFE,
+		HuC1 = 0xFF
+
+    }
+
 	//contains all the rom header data
 	public struct ROMHeader {
 		/*
@@ -105,6 +138,9 @@ namespace LunaGB.Core
 		ROMHeader header;
 		public int currentBank; //current switchable bank number
 		public byte[] rom;
+		CartridgeBase romMapper; //rom mapper class storing the rom data and handling rom mapping
+		ROMMapper mapper;
+		bool loadedRom;
 
 		public ROM()
 		{
@@ -112,9 +148,25 @@ namespace LunaGB.Core
 
 
 		public void OpenROM(string path) {
+			loadedRom = false;
 			rom = File.ReadAllBytes(path);
 			ReadHeader();
 			PrintHeaderInfo();
+			DetermineROMMapper();
+
+        }
+
+		//Determines which ROM mapper to use based on the cartridge type in the header
+		public void DetermineROMMapper() {
+			mapper = (ROMMapper)header.cartridgeType;
+            switch (mapper) {
+				case ROMMapper.Basic:
+					//Basic rom (0)
+					romMapper = new BasicCartridge();
+					break;
+				default:
+					throw new NotImplementedException("Only the basic rom mapper (0) is implemented");
+            }
         }
 
 		public void ReadHeader() {
@@ -186,7 +238,7 @@ namespace LunaGB.Core
 		public void PrintHeaderInfo() {
 			Console.WriteLine("Header information:");
 			Console.WriteLine("Name: " + header.title);
-			Console.WriteLine("GBC: " + (header.cgbFlag == 0x80 ? "Supports GBC" : header.cgbFlag == 0xC0 ? "GBC only" : "Doesn't work on GBC"));
+			Console.WriteLine("GBC: " + (header.cgbFlag == 0x80 ? "Supports GBC" : header.cgbFlag == 0xC0 ? "GBC only" : "No GBC support"));
 			Console.WriteLine("New licensee code: " + header.newLicenseeCode);
 			Console.WriteLine("Supports SGB: " + (header.sgbFlag == 0x03 ? "yes" : "no"));
 			Console.WriteLine("Cartridge type byte: " + header.cartridgeType);
