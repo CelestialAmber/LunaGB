@@ -111,14 +111,14 @@ namespace LunaGB.Core {
 
 		public void ExecuteInstruction() {
 			byte opcode = ReadByte();
-			byte lo = opcode & 0xF;
-			byte hi = opcode >> 4;
+			byte lo = (byte)(opcode & 0xF);
+			byte hi = (byte)(opcode >> 4);
 
 			if(opcode < 0x40){
 				switch(lo){
 					case 0x00:
 						if(opcode == 0x00){
-							//nop (4 cycles)
+							//nop
 							cycles += 4;
 						}else if(opcode == 0x10){
 							//enter low power mode, also used to switch between gbc and gb cpu modes
@@ -129,7 +129,7 @@ namespace LunaGB.Core {
 							//relative jump if zero flag not set
 							//the offset is an 8 bit signed number (-128 to 128)
 
-							jumpOffset = (sbyte)ReadByte();
+							sbyte jumpOffset = (sbyte)ReadByte();
 
                     		if(flagZ == 0) {
 								pc = (ushort)(pc + jumpOffset);
@@ -140,7 +140,7 @@ namespace LunaGB.Core {
 							//relative jump if carry not set
 							//the offset is an 8 bit signed number (-128 to 128)
 
-							jumpOffset = (sbyte)ReadByte();
+							sbyte jumpOffset = (sbyte)ReadByte();
 
                     		if(flagC == 0) {
 								pc = (ushort)(pc + jumpOffset);
@@ -152,10 +152,10 @@ namespace LunaGB.Core {
 						//ld r16,n16
 						ushort val = ReadUInt16();
 					
-						if(hi == 0x00) BC == val;
-						else if(hi == 0x01) DE == val;
-						else if(hi == 0x02) HL == val;
-						else sp == val;
+						if(hi == 0x00) BC = val;
+						else if(hi == 0x01) DE = val;
+						else if(hi == 0x02) HL = val;
+						else sp = val;
 						cycles += 12;
 						break;
 					case 0x02:
@@ -223,8 +223,8 @@ namespace LunaGB.Core {
 						}
 
 						flagN = 0;
-						flagZ = temp == 0 ? 1 : 0;
-						flagH = (temp & 0xF) == 0 ? 1 : 0; //If the lower nibble is 0, a carry occured from bit 3 to bit 4
+						flagZ = result == 0 ? 1 : 0;
+						flagH = (result & 0xF) == 0 ? 1 : 0; //If the lower nibble is 0, a carry occured from bit 3 to bit 4
 						cycles += 4;
 						break;
 					case 0x05:
@@ -270,55 +270,37 @@ namespace LunaGB.Core {
 						}
 
 						flagN = 1;
-						flagZ = temp == 0 ? 1 : 0;
-						flagH = (temp & 0xF) == 0 ? 1 : 0; //If the lower nibble is FF, a borrow occured from bit 3 to bit 4
+						flagZ = result == 0 ? 1 : 0;
+						flagH = (result & 0xF) == 0 ? 1 : 0; //If the lower nibble is FF, a borrow occured from bit 3 to bit 4
 						cycles += 4;
 						break;
 					case 0x06:
 					case 0x0E:
 						//ld r8,n8/ld (hl),n8
-						byte val = ReadByte();
+						byte byteVal = ReadByte();
 
-						if(opcode == 0x06) B = val;
-						else if(opcode == 0x0E) C = val;
-						else if(opcode == 0x16) D = val;
-						else if(opcode == 0x1E) E = val;
-						else if(opcode == 0x26) H = val;
-						else if(opcode == 0x2E) L = val;
+						if(opcode == 0x06) B = byteVal;
+						else if(opcode == 0x0E) C = byteVal;
+						else if(opcode == 0x16) D = byteVal;
+						else if(opcode == 0x1E) E = byteVal;
+						else if(opcode == 0x26) H = byteVal;
+						else if(opcode == 0x2E) L = byteVal;
 						else if(opcode == 0x36){
 							//ld (hl),n8
-							memory.WriteByte(HL, val);
+							memory.WriteByte(HL, byteVal);
 							cycles += 4; //Takes an additional 4 cycles
 						}
-						else if(opcode == 0x3E) A = val;
+						else if(opcode == 0x3E) A = byteVal;
 						cycles += 8;
 						break;
 					case 0x07:
 						if(hi == 0x00){ //0x07
 							//rlca
-							int carryBit = A >> 7;
-							//rotate a left
-							A = (byte)(((A << 1) & 0xFF) + (A >> 7));
-							//set carry flag
-							flagC = carryBit;
-							//reset H/Z/N flags
-							flagN = 0;
-							flagZ = 0;
-							flagH = 0;
+							A = RLC(A);
 							cycles += 4;
 						}else if(hi == 0x01){ //0x17
 							//rla
-							//rotate a left, including the carry flag
-							//C  1 2 3 4 5 6 7 8 -> 1  2 3 4 5 6 7 8 C
-							carryBit = flagC;
-							int newCarryBit = A >> 7;
-							A = (byte)(((A << 1) & 0xFF) + carryBit);
-							//set carry flag
-							flagC = newCarryBit;
-							//reset H/Z/N flags
-							flagN = 0;
-							flagZ = 0;
-							flagH = 0;
+							A = RL(A);
 							cycles += 4;
 						}else if(hi == 0x02){ //0x27
 							//daa
@@ -361,7 +343,7 @@ namespace LunaGB.Core {
 							//relative jump
 							//the offset is an 8 bit signed number (-128 to 128)
 
-							byte jumpOffset = (sbyte)ReadByte();
+							sbyte jumpOffset = (sbyte)ReadByte();
 							pc = (ushort)(pc + jumpOffset);
 							cycles += 12; //If the branch is taken, the instruction takes an extra 4 cycles
 						}else if(hi == 0x02){ //0x28
@@ -369,7 +351,7 @@ namespace LunaGB.Core {
 							//relative jump if zero flag set
 							//the offset is an 8 bit signed number (-128 to 128)
 
-							byte jumpOffset = (sbyte)ReadByte();
+							sbyte jumpOffset = (sbyte)ReadByte();
 
                     		if(flagZ == 1) {
 								pc = (ushort)(pc + jumpOffset);
@@ -380,7 +362,7 @@ namespace LunaGB.Core {
 							//relative jump if carry set
 							//the offset is an 8 bit signed number (-128 to 128)
 
-							byte jumpOffset = (sbyte)ReadByte();
+							sbyte jumpOffset = (sbyte)ReadByte();
 
                     		if(flagC == 1) {
 								pc = (ushort)(pc + jumpOffset);
@@ -389,27 +371,27 @@ namespace LunaGB.Core {
 						}
 						break;
 					case 0x09:
-						ushort val = hi == 0x00 ? BC : hi == 0x01 ? DE : hi == 0x02 ? HL : sp;
+						val = hi == 0x00 ? BC : hi == 0x01 ? DE : hi == 0x02 ? HL : sp;
 						flagH = (HL & 0xFFF) + val > 0xFFF ? 1 : 0; //Set if overflow from bit 11
-						flagC = HL + val > 0xFFFF;
+						flagC = HL + val > 0xFFFF ? 1 : 0;
 						HL += val;
 						flagN = 0;
 						cycles += 8;
 						break;
 					case 0x0A:
 						//ld a,(r16)
-						ushort val = ReadUInt16();
+						val = ReadUInt16();
 					
-						if(hi == 0x00)A = memory.ReadByte(BC); //0x0A
-						else if(hi == 0x01)A = memory.ReadByte(DE); //0x1A
+						if(hi == 0x00)A = memory.GetByte(BC); //0x0A
+						else if(hi == 0x01)A = memory.GetByte(DE); //0x1A
 						else if(hi == 0x02){
 							//0x2A
-							A = memory.ReadByte(HL);
+							A = memory.GetByte(HL);
 							HL++;
 						}
 						else{
 							//0x3A
-							A = memory.ReadByte(HL);
+							A = memory.GetByte(HL);
 							HL--;
 						}
 						cycles += 8;
@@ -425,29 +407,11 @@ namespace LunaGB.Core {
 					case 0x0F:
 						if(hi == 0x00){ //0x0F
 							//rrca
-							carryBit = A & 1;
-							//rotate a right
-							A = (byte)((A >> 1) + (A << 7) & 0xFF);
-							//set carry
-							flagC = carryBit;
-							//reset H/Z/N flags
-							flagN = 0;
-							flagZ = 0;
-							flagH = 0;
+							A = RRC(A);
 							cycles += 4;
 						}else if(hi == 0x01){ //0x1F
 							//rra
-							//rotate a right, including the carry flag
-							//C  1 2 3 4 5 6 7 8 -> 8  C 1 2 3 4 5 6 7
-							carryBit = flagC;
-							newCarryBit = A & 1;
-							A = (byte)((A >> 1) + (carryBit << 7));
-							//set carry flag
-							flagC = newCarryBit;
-							//reset H/Z/N flags
-							flagN = 0;
-							flagZ = 0;
-							flagH = 0;
+							A = RR(A);
 							cycles += 4;
 						}else if(hi == 0x02){ //0x2F
 							//cpl
@@ -527,13 +491,13 @@ namespace LunaGB.Core {
 					break;
 				case 0xC3:
 					//jp n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 					pc = address;
 					cycles += 16;
 					break;
 				case 0xC4:
 					//call nz,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagZ == 0){
 						Call(address);
@@ -547,9 +511,9 @@ namespace LunaGB.Core {
 					break;
 				case 0xC6:
 					//add a,n8
-					byte val = ReadByte();
-					CheckCarry();
-					A += val;
+					byte byteVal = ReadByte();
+					CheckCarry(A, byteVal);
+					A += byteVal;
 					flagN = 0;
 					flagZ = A == 0 ? 1 : 0;
 					cycles += 8;
@@ -574,7 +538,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xCA:
 					//jp z,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagZ == 1){
 						pc = address;
@@ -588,7 +552,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xCC:
 					//call z,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagZ == 1){
 						Call(address);
@@ -597,17 +561,18 @@ namespace LunaGB.Core {
 					break;
 				case 0xCD:
 					//call n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					Call(address);
 					cycles += 24;
 					break;
 				case 0xCE:
 					//adc a,d8
-					byte val = ReadByte();
+					byteVal = ReadByte();
 					int carry = flagC;
-					CheckCarry();
-					A += val + carry;
+					flagH = (A & 0xF) + (byteVal & 0xF) + carry > 0xF ? 1 : 0;
+					flagC = A + byteVal + carry > 0xFF ? 1 : 0;
+					A += (byte)(byteVal + carry);
 					flagN = 0;
 					flagZ = A == 0 ? 1 : 0;
 					cycles += 8;
@@ -631,7 +596,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xD2:
 					//jp nc,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagC == 0){
 						pc = address;
@@ -640,7 +605,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xD4:
 					//call nc,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagC == 0){
 						Call(address);
@@ -654,9 +619,9 @@ namespace LunaGB.Core {
 					break;
 				case 0xD6:
 					//sub n8
-					byte val = ReadByte();
-					CheckBorrow();
-					A -= val;
+					byteVal = ReadByte();
+					CheckBorrow(A,byteVal);
+					A -= byteVal;
 					flagN = 1;
 					flagZ = A == 0 ? 1 : 0;
 					cycles += 8;
@@ -681,7 +646,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xDA:
 					//jp c,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagC == 1){
 						pc = address;
@@ -690,7 +655,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xDC:
 					//call c,n16
-					ushort address = ReadUInt16();
+					address = ReadUInt16();
 
 					if(flagC == 1){
 						Call(address);
@@ -699,10 +664,11 @@ namespace LunaGB.Core {
 					break;
 				case 0xDE:
 					//sbc a,d8
-					byte val = ReadByte();
-					int carry = flagC;
-					CheckBorrow();
-					A -= val + carry;
+					byteVal = ReadByte();
+					carry = flagC;
+					flagH = (A & 0xF) + (byteVal & 0xF) + carry > 0xF ? 1 : 0;
+					flagC = A + byteVal + carry > 0xFF ? 1 : 0;
+					A -= (byte)(byteVal + carry);
 					flagN = 1;
 					flagZ = A == 0 ? 1 : 0;
 					cycles += 8;
@@ -735,8 +701,8 @@ namespace LunaGB.Core {
 					break;
 				case 0xE6:
 					//and n8
-					byte val = ReadByte();
-					A &= val;
+					byteVal = ReadByte();
+					A &= byteVal;
 					flagZ = A == 0 ? 1 : 0;
 					flagN = 0;
 					flagH = 1;
@@ -750,26 +716,26 @@ namespace LunaGB.Core {
 					break;
 				case 0xE8:
 					//add sp,n8
-					byte val = ReadByte();
-					CheckCarry(sp,val);
-					sp += val;
+					byteVal = ReadByte();
+					CheckCarry((byte)sp,byteVal);
+					sp += byteVal;
 					cycles += 16;
 					break;
 				case 0xE9:
 					//jp (hl)
-					pc = memory.ReadByte(HL);
+					pc = memory.GetByte(HL);
 					cycles += 4;
 					break;
 				case 0xEA:
 					//ld (n16),a
-					ushort address = ReadUInt16();
-					memory.WriteByte(address,a);
+					address = ReadUInt16();
+					memory.WriteByte(address,A);
 					cycles += 16;
 					break;
 				case 0xEE:
 					//xor n8
-					byte val = ReadByte();
-					A ^= val;
+					byteVal = ReadByte();
+					A ^= byteVal;
 					flagZ = A == 0 ? 1 : 0;
 					flagN = 0;
 					flagH = 0;
@@ -783,8 +749,8 @@ namespace LunaGB.Core {
 					break;
 				case 0xF0:
 					//ldh a,(n8)
-					byte offset = ReadByte();
-					A = memory.ReadByte(0xFF00 + offset);
+					offset = ReadByte();
+					A = memory.GetByte(0xFF00 + offset);
 					cycles += 12;
 					break;
 				case 0xF1:
@@ -794,7 +760,7 @@ namespace LunaGB.Core {
 					break;
 				case 0xF2:
 					//ldh a,(c)
-					A = memory.ReadByte(0xFF00 + C);
+					A = memory.GetByte(0xFF00 + C);
 					cycles += 8;
 					break;
 				case 0xF3:
@@ -810,8 +776,8 @@ namespace LunaGB.Core {
 					break;
 				case 0xF6:
 					//or n8
-					byte val = ReadByte();
-					A |= val;
+					byteVal = ReadByte();
+					A |= byteVal;
 					flagZ = A == 0 ? 1 : 0;
 					flagN = 0;
 					flagH = 0;
@@ -825,9 +791,9 @@ namespace LunaGB.Core {
 					break;
 				case 0xF8:
 					//ld hl,sp+n8
-					byte offset = ReadByte();
-					CheckCarry(sp, offset);
-					hl = sp + offset;
+					offset = ReadByte();
+					CheckCarry((byte)sp, offset);
+					HL = (ushort)(sp + offset);
 					cycles += 8;
 					break;
 				case 0xF9:
@@ -837,8 +803,8 @@ namespace LunaGB.Core {
 					break;
 				case 0xFA:
 					//ld a,(n16)
-					ushort address = ReadUInt16();
-					a = memory.ReadByte(address);
+					address = ReadUInt16();
+					A = memory.GetByte(address);
 					cycles += 16;
 					break;
 				case 0xFB:
@@ -849,8 +815,8 @@ namespace LunaGB.Core {
 					break;
 				case 0xFE:
 					//cp n8
-					byte val = ReadByte();
-					Compare(val);
+					byteVal = ReadByte();
+					Compare(byteVal);
 					cycles += 8;
 					break;
 				case 0xFF:
@@ -865,7 +831,72 @@ namespace LunaGB.Core {
 		}
 
 		void ExecuteCBInstruction(){
+			byte opcode = ReadByte();
+			byte lo = (byte)(opcode & 0xF);
+			byte hi = (byte)(opcode >> 4);
+			int regIndex = lo % 8;
+			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(regIndex);
 
+			//CB00-CB3F
+			if(opcode < 0x40){
+				if(opcode < 0x10){
+					if(lo < 0x08){ //CB00-CB07
+						//rlc
+						SetRegister(regIndex, RLC(val));
+						cycles += regIndex == 6 ? 16 : 8;
+					}else{ //CB08-CB0F
+						//rrc
+						SetRegister(regIndex, RRC(val));
+						cycles += regIndex == 6 ? 16 : 8;
+					}
+				}else if(opcode < 0x20){
+					if(lo < 0x08){ //CB10-CB17
+						//rl
+						SetRegister(regIndex, RL(val));
+						cycles += regIndex == 6 ? 16 : 8;
+					}else{ //CB18-CB1F
+						//rr
+						SetRegister(regIndex, RR(val));
+						cycles += regIndex == 6 ? 16 : 8;
+					}
+				}else if(opcode < 0x20){
+					if(lo < 0x08){ //CB20-CB27
+						//sla
+						SetRegister(regIndex, SLA(val));
+						cycles += regIndex == 6 ? 16 : 8;
+					}else{ //CB28-CB2F
+						//sra
+						SetRegister(regIndex, SRA(val));
+						cycles += regIndex == 6 ? 16 : 8;
+					}
+				}else{
+					if(lo < 0x08){ //CB30-CB37
+						//swap
+						SetRegister(regIndex, Swap(val));
+					}else{ //CB38-CB3F
+						//srl
+						SetRegister(regIndex, SRL(val));
+					}
+				}
+			}else if(opcode < 0x80){
+				//bit instructions
+				int bitIndex = lo/8 + (hi - 4)*2;
+				int bit = (val >> bitIndex) & 0x1;
+				flagZ = bit == 0 ? 1 : 0;
+				flagN = 0;
+				flagH = 1;
+			}else if(opcode < 0xC0){
+				//res instructions
+				int bitIndex = lo/8 + (hi - 8)*2;
+				byte mask = (byte)(~(1 << bitIndex));
+				byte result = (byte)(val & mask);
+				SetRegister(regIndex,result);
+			}else{
+				//set instructions
+				int bitIndex = lo/8 + (hi - 0xC)*2;
+				byte result = (byte)(val | (1 << bitIndex));
+				SetRegister(regIndex,result);
+			}
 		}
 
 
@@ -932,8 +963,9 @@ namespace LunaGB.Core {
 			int regIndex = (opcode & 0xF) - 8;
 			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
 			int carry = flagC;
-			CheckCarry();
-			A += val + carry;
+			flagH = (A & 0xF) + (val & 0xF) + carry > 0xF ? 1 : 0;
+			flagC = A + val + carry > 0xFF ? 1 : 0;
+			A += (byte)(val + carry);
 			flagZ = A == 0 ? 1 : 0;
 			cycles += regIndex == 6 ? 8 : 4;
 		}
@@ -942,8 +974,9 @@ namespace LunaGB.Core {
 			int regIndex = (opcode & 0xF) - 8;
 			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
 			int carry = flagC;
-			CheckBorrow();
-			A -= val + carry;
+			flagH = (A & 0xF) - (val & 0xF) - carry < 0 ? 1 : 0;
+			flagC = A + val + carry < 0 ? 1 : 0;
+			A -= (byte)(val + carry);
 			lastInstructionWasSubtract = true;
 			flagZ = A == 0 ? 1 : 0;
 			cycles += regIndex == 6 ? 8 : 4;
@@ -956,6 +989,125 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
+		//Rotate functions
+
+		byte RLC(byte val){
+			byte result = 0;
+			int carryBit = val >> 7;
+			//rotate a left
+			result = (byte)(((val << 1) & 0xFF) + (val >> 7));
+			//set carry flag
+			flagC = carryBit;
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		byte RRC(byte val){
+			byte result = 0;
+			int carryBit = val & 1;
+			//rotate a right
+			result = (byte)((val >> 1) + (val << 7) & 0xFF);
+			//set carry
+			flagC = carryBit;
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		byte RL(byte val){
+			byte result = 0;
+			//rotate a left, including the carry flag
+			//C  1 2 3 4 5 6 7 8 -> 1  2 3 4 5 6 7 8 C
+			int carryBit = flagC;
+			int newCarryBit = val >> 7;
+			result = (byte)(((val << 1) & 0xFF) + carryBit);
+			//set carry flag
+			flagC = newCarryBit;
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		byte RR(byte val){
+			byte result = 0;
+			//rotate a right, including the carry flag
+			//C  1 2 3 4 5 6 7 8 -> 8  C 1 2 3 4 5 6 7
+			int carryBit = flagC;
+			int newCarryBit = val & 1;
+			result = (byte)((val >> 1) + (carryBit << 7));
+			//set carry flag
+			flagC = newCarryBit;
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		//Shift functions
+
+		byte SLA(byte val){
+			byte result = 0;
+			//set carry flag
+			flagC = val << 1 > 0xFF ? 1 : 0;
+			result = (byte)(val << 1);
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		byte SRA(byte val){
+			byte result = 0;
+			result = (byte)(val >> 1);
+			//reset H/Z/N/C flags
+			flagC = 0;
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		byte SRL(byte val){
+			byte result = 0;
+			int newCarryBit = val & 1;
+			result = (byte)(val >> 1);
+			//set carry flag
+			flagC = newCarryBit;
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+
+			return result;
+		}
+
+		byte Swap(byte val){
+			byte hi = (byte)(val >> 4);
+			byte lo = (byte)(val & 0xF);
+			byte result = (byte)((lo << 4) + hi);
+
+			flagZ = result == 0 ? 1 : 0;
+			flagN = 0;
+			flagC = 0;
+			flagH = 0;
+
+			return result;
+		}
 
 
 		void Compare(byte val){
