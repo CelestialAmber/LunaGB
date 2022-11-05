@@ -21,6 +21,10 @@ namespace LunaGB.Core
 
         }
 
+       public void WriteUInt16(int index, ushort val) {
+
+        }
+
 		public ushort GetUInt16(int index) {
 			return 0;
         }
