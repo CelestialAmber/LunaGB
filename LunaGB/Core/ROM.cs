@@ -138,7 +138,7 @@ namespace LunaGB.Core
 		ROMHeader header;
 		public int currentBank; //current switchable bank number
 		public byte[] rom;
-		CartridgeBase romMapper; //rom mapper class storing the rom data and handling rom mapping
+		public Cartridge romMapper; //rom mapper class storing the rom data and handling rom mapping
 		ROMMapper mapper;
 		bool loadedRom;
 
@@ -153,7 +153,8 @@ namespace LunaGB.Core
 			ReadHeader();
 			PrintHeaderInfo();
 			DetermineROMMapper();
-
+			romMapper.rom = rom;
+			romMapper.currentBank = 1; //The default bank in bank slot 1 is bank 1
         }
 
 		//Determines which ROM mapper to use based on the cartridge type in the header

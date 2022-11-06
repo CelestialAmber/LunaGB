@@ -68,6 +68,7 @@ namespace LunaGB.Avalonia {
                      string romName = filename;
                      Console.WriteLine("Loading \"" + romName + "\"");
                      emulator.LoadROM(romName);
+                    emulator.Start();
                  }
              }
         }

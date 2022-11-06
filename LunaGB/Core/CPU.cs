@@ -97,9 +97,6 @@ namespace LunaGB.Core {
 			}
 		}
 
-		//Used to keep track of if a daa instruction comes after a subtract function
-		bool lastInstructionWasSubtract = false;
-
 		Memory memory;
 
 
@@ -109,10 +106,27 @@ namespace LunaGB.Core {
 			this.memory = memory;
 		}
 
+		public void Init(){
+			//Set all registers to 0
+			A = 0;
+			B = 0;
+			C = 0;
+			D = 0;
+			E = 0;
+			F = 0;
+			H = 0;
+			L = 0;
+			sp = 0;
+			pc = 0x100; //Initialize the PC to 0x100 (entry point)
+			cycles = 0;
+		}
+
 		public void ExecuteInstruction() {
 			byte opcode = ReadByte();
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
+
+			Console.WriteLine("Opcode: " + opcode.ToString("X2"));
 
 			if(opcode < 0x40){
 				switch(lo){
@@ -316,7 +330,7 @@ namespace LunaGB.Core {
 								n += 0x60;
 							}
 
-							if(lastInstructionWasSubtract) A = (byte)(A - n);
+							if(flagN == 1) A = (byte)(A - n);
 							else A = (byte)(A + n);
 
 							flagC = A > 0x99 ? 1 : 0;
@@ -873,9 +887,11 @@ namespace LunaGB.Core {
 					if(lo < 0x08){ //CB30-CB37
 						//swap
 						SetRegister(regIndex, Swap(val));
+						cycles += regIndex == 6 ? 16 : 8;
 					}else{ //CB38-CB3F
 						//srl
 						SetRegister(regIndex, SRL(val));
+						cycles += regIndex == 6 ? 16 : 8;
 					}
 				}
 			}else if(opcode < 0x80){
@@ -885,17 +901,20 @@ namespace LunaGB.Core {
 				flagZ = bit == 0 ? 1 : 0;
 				flagN = 0;
 				flagH = 1;
+				cycles += regIndex == 6 ? 16 : 8;
 			}else if(opcode < 0xC0){
 				//res instructions
 				int bitIndex = lo/8 + (hi - 8)*2;
 				byte mask = (byte)(~(1 << bitIndex));
 				byte result = (byte)(val & mask);
 				SetRegister(regIndex,result);
+				cycles += regIndex == 6 ? 16 : 8;
 			}else{
 				//set instructions
 				int bitIndex = lo/8 + (hi - 0xC)*2;
 				byte result = (byte)(val | (1 << bitIndex));
 				SetRegister(regIndex,result);
+				cycles += regIndex == 6 ? 16 : 8;
 			}
 		}
 
@@ -932,7 +951,6 @@ namespace LunaGB.Core {
 			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
 			CheckBorrow(A,val);
 			A -= val;
-			lastInstructionWasSubtract = true;
 			flagZ = A == 0 ? 1 : 0;
 			flagN = 1;
 			cycles += regIndex == 6 ? 8 : 4;
@@ -977,7 +995,6 @@ namespace LunaGB.Core {
 			flagH = (A & 0xF) - (val & 0xF) - carry < 0 ? 1 : 0;
 			flagC = A + val + carry < 0 ? 1 : 0;
 			A -= (byte)(val + carry);
-			lastInstructionWasSubtract = true;
 			flagZ = A == 0 ? 1 : 0;
 			cycles += regIndex == 6 ? 8 : 4;
 		}

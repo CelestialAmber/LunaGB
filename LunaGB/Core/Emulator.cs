@@ -31,15 +31,15 @@ namespace LunaGB.Core
 
 		//Starts the emulator.
 		public void Start() {
-			//isRunning = true;
-			//Run();
+			isRunning = true;
+			cpu.Init();
+			memory.Init();
+			Run();
         }
 
         public void Run() {
             while (isRunning) {
-               // if (Input.IsButtonPressed(Button.A)) {
-				//	Console.WriteLine("Pressed A");
-                //}
+            	cpu.ExecuteInstruction();
 				Thread.Sleep(1000);
             }
         }
