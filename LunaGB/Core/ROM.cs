@@ -34,7 +34,6 @@ namespace LunaGB.Core
 		BandaiTama5 = 0xFD,
 		HuC3 = 0xFE,
 		HuC1 = 0xFF
-
     }
 
 	//contains all the rom header data
@@ -43,20 +42,15 @@ namespace LunaGB.Core
 		0x100-0x103: entry point
 		0x104-0x133: nintendo logo
         /*
-
         In later cartridges, the bytes at 0x13F-0x142 are the manufacturer code,
 		and 0x143 is the CGB flag
 		*/
         public string title; //0x134-0x143
-
         //80: works on GBC/GB, C0: only works on GBC
         public byte cgbFlag; //0x143
-
 		public string newLicenseeCode; //0x144-0x145
-
 		//00: doesn't support sgb, 03: supports sgb
 		public byte sgbFlag; //0x146
-
 		/*
 		Values:
 		00h  ROM ONLY                 19h  MBC5
@@ -77,7 +71,6 @@ namespace LunaGB.Core
 		13h  MBC3+RAM+BATTERY         FFh  HuC1+RAM+BATTERY
 		*/
 		public byte cartridgeType; //0x147
-
         /*
         Values:
 		00h -  32KByte (no ROM banking)
@@ -94,7 +87,6 @@ namespace LunaGB.Core
 		54h - 1.5MByte (96 banks)
 		*/
 		public byte romSize; //0x148
-
         /*
         Values:
 		00h - None
@@ -105,27 +97,20 @@ namespace LunaGB.Core
 		05h - 64 KBytes (8 banks of 8KBytes each)
 		*/
 		public byte ramSize; //0x149
-
 		//0: jp, 1: non-jp
 		public byte destinationCode; //0x14A
-
 		public byte oldLicenseeCode; //0x14B
-
 		//usually 0
 		public byte maskRomVersionNumber; //0x14C
-
         /*
         If the header checksum isn't correct, the game won't work on real hardware
-
 		Pseudocode for calculating the checksum:
-
 		x = 0;
 		for(int i = 0x134; i <= 0x14C; i++){
 			x -= mem[i] - 1;
 		}
 		*/
 		public byte headerChecksum; //0x14D
-
 		/*
 		Calculated by adding up all the bytes in the rom except the global checksum bytes
 		The Game Boy doesn't check this checksum
@@ -140,11 +125,8 @@ namespace LunaGB.Core
 		public byte[] rom;
 		public Cartridge romMapper; //rom mapper class storing the rom data and handling rom mapping
 		ROMMapper mapper;
-		bool loadedRom;
-
-		public ROM()
-		{
-		}
+		public bool loadedRom;
+		public bool mapperSupported;
 
 
 		public void OpenROM(string path) {
@@ -153,12 +135,15 @@ namespace LunaGB.Core
 			ReadHeader();
 			PrintHeaderInfo();
 			DetermineROMMapper();
+			if(!mapperSupported) return; //If the ROM uses an unsupported mapper, return
 			romMapper.rom = rom;
 			romMapper.currentBank = 1; //The default bank in bank slot 1 is bank 1
+			loadedRom = true;
         }
 
 		//Determines which ROM mapper to use based on the cartridge type in the header
 		public void DetermineROMMapper() {
+			mapperSupported = true;
 			mapper = (ROMMapper)header.cartridgeType;
             switch (mapper) {
 				case ROMMapper.Basic:
@@ -166,7 +151,10 @@ namespace LunaGB.Core
 					romMapper = new BasicCartridge();
 					break;
 				default:
-					throw new NotImplementedException("Only the basic rom mapper (0) is implemented");
+					romMapper = new BasicCartridge();
+					//Console.WriteLine("Error: Only the basic rom mapper (0) is implemented");
+					//mapperSupported = false;
+					break;
             }
         }
 

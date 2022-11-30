@@ -10,9 +10,14 @@ namespace LunaGB.Core
 		Display display;
 		Memory memory;
 		ROM rom;
+		Disassembler disassembler;
 
 		public bool isRunning = false;
 		public bool paused = false;
+		public bool loadedRom => rom.loadedRom;
+		public bool debug = true;
+
+		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
 
 
 		public Emulator()
@@ -22,6 +27,7 @@ namespace LunaGB.Core
             rom = new ROM();
             memory = new Memory(rom);
             cpu = new CPU(memory);
+			disassembler = new Disassembler(memory);
         }
 
 		//Loads the specified ROM.
@@ -32,21 +38,54 @@ namespace LunaGB.Core
 		//Starts the emulator.
 		public void Start() {
 			isRunning = true;
-			cpu.Init();
 			memory.Init();
+			cpu.Init();
 			Run();
         }
 
         public void Run() {
             while (isRunning) {
-            	cpu.ExecuteInstruction();
-				Thread.Sleep(1000);
-            }
+				while(cpu.cycles < maxCycles) {
+					if (debug)
+					{
+						Console.WriteLine(disassembler.Disassemble(cpu.pc));
+						//Console.WriteLine(cpu.GetRegisterDebugInfo());
+						Console.WriteLine();
+					}
+					cpu.ExecuteInstruction();
+					//If an error occured within the CPU, stop the emulator.
+					if(cpu.errorOccured == true) {
+						isRunning = false;
+						break;
+					}
+					//CheckSCRegister();
+				}
+				cpu.cycles = 0;
+				Thread.Sleep(1);
+			}
         }
 
 		//Stops the emulator.
 		public void Stop() {
-            isRunning = false;
+			isRunning = false;
+		}
+
+		//Code for blargg tests
+
+		public string testRomString = "";
+		bool readCharacter = false;
+
+		public void CheckSCRegister() {
+			byte scReg = memory.GetIOReg(IORegister.SC);
+
+			if(scReg == 0x81 && !readCharacter) {
+				readCharacter = true;
+				byte sbReg = memory.GetIOReg(IORegister.SB);
+				testRomString += (char)sbReg;
+            }else if(readCharacter && scReg != 0x81) {
+				readCharacter = false;
+				Console.WriteLine(testRomString);
+            }
         }
 
     }

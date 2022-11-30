@@ -16,14 +16,18 @@ namespace LunaGB.Core
             A
         }
 
-        //Keyboard button map
-        //public static Keys[] buttonKeys = { Keys.Up, Keys.Down, Keys.Left, Keys.Right, Keys.RightShift, Keys.Enter, Keys.Z, Keys.X };
+        //Button flag array
+        public static bool[] buttonPressed = new bool[8];
 
-        /* public static bool IsButtonPressed(Button button) {
-             //return Keyboard.GetState().IsKeyDown(buttonKeys[(int)button]);
-             return Keyboard.GetState().GetPressedKeyCount() > 0;
-         }*/
+        public static void OnButtonDown(Button button) {
+            buttonPressed[(int)button] = true;
+        }
 
-    }
+		public static void OnButtonUp(Button button) {
+			buttonPressed[(int)button] = false;
+		}
+
+
+	}
 }
 

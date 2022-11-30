@@ -14,23 +14,29 @@ namespace LunaGB.Avalonia {
     public partial class MainWindow : Window {
 
         Emulator emulator;
-
         Image imageBox;
 
+        //Keyboard button map
+        public static Dictionary<Key,Input.Button> buttonKeys = new Dictionary<Key,Input.Button>{
+            { Key.Up,Input.Button.Up },
+			{ Key.Down,Input.Button.Down },
+			{ Key.Left,Input.Button.Left },
+			{ Key.Right,Input.Button.Right },
+			{ Key.RightShift,Input.Button.Select },
+			{ Key.Enter,Input.Button.Start },
+			{ Key.Z,Input.Button.B },
+			{ Key.X,Input.Button.A },
+		};
 
         public MainWindow() {
             DataContext = this;
             AvaloniaXamlLoader.Load(this);
-
             imageBox = this.FindControl<Image>("ImageBox");
-
             emulator = new Emulator();
-
             KeyDown += OnKeyDown;
-
+            KeyUp += OnKeyUp;
 
             GBBitmap bitmap = new GBBitmap();
-
             for (int x = 0; x < 160; x++) {
                 for (int y = 0; y < 144; y++) {
                     if ((x + y) % 2 == 0) {
@@ -38,7 +44,6 @@ namespace LunaGB.Avalonia {
                     }
                 }
             }
-
             UpdateDisplay(bitmap.ToByteArray());
         }
 
@@ -62,13 +67,16 @@ namespace LunaGB.Avalonia {
              var result = await dialog.ShowAsync(this);
 
 
-            if (result != null) {
+            if (result != null && result.Length != 0) {
                  string filename = result[0];
                  if (filename != null) {
                      string romName = filename;
                      Console.WriteLine("Loading \"" + romName + "\"");
                      emulator.LoadROM(romName);
-                    emulator.Start();
+                    //If the ROM successfully loaded, start the emulator
+                    if(emulator.loadedRom) {
+                        emulator.Start();
+                    }
                  }
              }
         }
@@ -100,8 +108,18 @@ namespace LunaGB.Avalonia {
 
 
         private void OnKeyDown(object? sender, KeyEventArgs e) {
-            Console.WriteLine("pressed key");
+            Console.WriteLine("Pressed key");
+            if(buttonKeys.ContainsKey(e.Key)){
+                Input.OnButtonDown(buttonKeys[e.Key]);
+            }
         }
 
-    }
+		private void OnKeyUp(object? sender, KeyEventArgs e) {
+			Console.WriteLine("Released key");
+			if(buttonKeys.ContainsKey(e.Key)) {
+				Input.OnButtonUp(buttonKeys[e.Key]);
+			}
+		}
+
+	}
 }

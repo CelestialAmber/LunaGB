@@ -15,38 +15,38 @@ namespace LunaGB.Core {
         */
 
 		public int flagZ {
-			get {
-				return GetFlag(3);
+			get{
+			return GetFlag(3);
 			}
-			set {
-				SetFlag(3, value);
+			set{
+			SetFlag(3, value);
 			}
 		}
 
 		public int flagN {
-			get {
-				return GetFlag(2);
+			get{
+			return GetFlag(2);
 			}
-			set {
-				SetFlag(2, value);
+			set{
+			SetFlag(2, value);
 			}
 		}
 
 		public int flagH {
-			get {
-				return GetFlag(1);
+			get{
+			return GetFlag(1);
 			}
-			set {
-				SetFlag(1, value);
+			set{
+			SetFlag(1, value);
 			}
 		}
 
 		public int flagC {
-			get {
-				return GetFlag(0);
+			get{
+			return GetFlag(0);
 			}
-			set {
-				SetFlag(0, value);
+			set{
+			SetFlag(0, value);
 			}
 		}
 
@@ -55,45 +55,48 @@ namespace LunaGB.Core {
 		public bool lowPowerMode; //low power mode flag
 		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
 		public bool interruptsEnabled; //are interrupts currently enabled?
+		bool debug = true;
+		int pcTemp; //used for the instruction debug messages
+		public bool errorOccured = false; //has the cpu ran into an error?
 
 		//Register pairs
 		public ushort AF {
-			get {
-				return (ushort)((A << 8) + F);
+			get{
+			return (ushort)((A << 8) + F);
 			}
 			set {
-				A = (byte)(value >> 8);
-				F = (byte)value;
+			A = (byte)(value >> 8);
+			F = (byte)value;
 			}
 		}
 
 		public ushort BC {
-			get {
+			get{
 				return (ushort)((B << 8) + C);
 			}
-			set {
-				B = (byte)(value >> 8);
-				C = (byte)value;
+			set{
+			B = (byte)(value >> 8);
+			C = (byte)value;
 			}
 		}
 
 		public ushort DE {
-			get {
-				return (ushort)((D << 8) + E);
+			get{
+			return (ushort)((D << 8) + E);
 			}
-			set {
-				D = (byte)(value >> 8);
-				E = (byte)value;
+			set{
+			D = (byte)(value >> 8);
+			E = (byte)value;
 			}
 		}
 
 		public ushort HL {
-			get {
-				return (ushort)((H << 8) + L);
+			get{
+			return (ushort)((H << 8) + L);
 			}
-			set {
-				H = (byte)(value >> 8);
-				L = (byte)value;
+			set{
+			H = (byte)(value >> 8);
+			L = (byte)value;
 			}
 		}
 
@@ -101,10 +104,10 @@ namespace LunaGB.Core {
 
 
 
-
 		public CPU(Memory memory) {
 			this.memory = memory;
 		}
+
 
 		public void Init(){
 			//Set all registers to 0
@@ -119,14 +122,24 @@ namespace LunaGB.Core {
 			sp = 0;
 			pc = 0x100; //Initialize the PC to 0x100 (entry point)
 			cycles = 0;
+			memory.SetIOReg(IORegister.LY, 0x91); //set LY to 0x91 for now
+			errorOccured = false;
+		}
+
+		public string GetRegisterDebugInfo() {
+			string s = "A = " + A.ToString("X2") + ", B = " + B.ToString("X2") + ", C = " + C.ToString("X2")
+				+ ", D = " + D.ToString("X2") + ", E = " + E.ToString("X2") + ", H = " + H.ToString("X2")
+				+ ", L = " + L.ToString("X2") + "\n";
+			s += "PC = " + pcTemp.ToString("X4") + ", SP = " + sp.ToString("X4") + "\n";
+			s += string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}\n", flagN, flagZ, flagC, flagH);
+			return s;
 		}
 
 		public void ExecuteInstruction() {
+			pcTemp = pc; //store the starting pc for the debug message
 			byte opcode = ReadByte();
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
-
-			Console.WriteLine("Opcode: " + opcode.ToString("X2"));
 
 			if(opcode < 0x40){
 				switch(lo){
@@ -371,7 +384,7 @@ namespace LunaGB.Core {
 								pc = (ushort)(pc + jumpOffset);
 								cycles += 12; //If the branch is taken, the instruction takes an extra 4 cycles
 							} else cycles += 8; //If not, it only takes 8
-						}else if(hi == 0x02){ //0x38
+						}else if(hi == 0x03){ //0x38
 							//jr c,r8
 							//relative jump if carry set
 							//the offset is an 8 bit signed number (-128 to 128)
@@ -455,27 +468,27 @@ namespace LunaGB.Core {
 					//math instructions	
 					if(opcode < 0x90){ //add/adc (0x80-8F)
 						if(opcode < 0x88){
-							Add(opcode);
+							Add(lo);
 						}else{
-							Adc(opcode);
+							Adc(lo - 8);
 						}
 					}else if(opcode < 0xA0){ //sub/sbc (0x90-9F)
 						if(opcode < 0x98){
-							Sub(opcode);
+							Sub(lo);
 						}else{
-							Sbc(opcode);
+							Sbc(lo - 8);
 						}
 					}else if(opcode < 0xB0){ //and/xor (0xA0-AF)
 						if(opcode < 0xA8){
-							And(opcode);
+							And(lo);
 						}else{
-							Xor(opcode);
+							Xor(lo - 8);
 						}
 					}else if(opcode < 0xC0){ //or/cp (0xB0-BF)
 						if(opcode < 0xB8){
-							Or(opcode);
+							Or(lo);
 						}else{
-							Cp(opcode);
+							Cp(lo - 8);
 						}
 					}
 				}
@@ -839,7 +852,9 @@ namespace LunaGB.Core {
 					RST(0x38);
 					break;
 				default:
-					throw new NotImplementedException("Instruction not implemented. It should be though?");
+					Console.WriteLine("Illegal opcode 0x" + opcode.ToString("X2"));
+					errorOccured = true;
+					break;
 			}
 			}
 		}
@@ -924,9 +939,8 @@ namespace LunaGB.Core {
 		//The bitwise/math functions only cover the versions with register params (opcodes 8x-Bx)
 		//All instructions of this type take 8 cycles (add n/others take 4)
 
-		void Xor(byte opcode) {
-			int regIndex = (opcode & 0xF) - 8;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Xor(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			A ^= val;
 			flagZ = A == 0 ? 1 : 0;
 			flagN = 0;
@@ -935,9 +949,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void And(byte opcode) {
-			int regIndex = opcode & 0xF;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void And(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			A &= val;
 			flagZ = A == 0 ? 1 : 0;
 			flagN = 0;
@@ -946,9 +959,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void Sub(byte opcode) {
-			int regIndex = opcode & 0xF;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Sub(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			CheckBorrow(A,val);
 			A -= val;
 			flagZ = A == 0 ? 1 : 0;
@@ -956,9 +968,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void Add(byte opcode) {
-			int regIndex = opcode & 0xF;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Add(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			CheckCarry(A,val);
 			A += val;
 			flagZ = A == 0 ? 1 : 0;
@@ -966,9 +977,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void Or(byte opcode) {
-			int regIndex = opcode & 0xF;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Or(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			A ^= val;
 			flagZ = A == 0 ? 1 : 0;
 			flagC = 0;
@@ -977,9 +987,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void Adc(byte opcode) {
-			int regIndex = (opcode & 0xF) - 8;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Adc(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			int carry = flagC;
 			flagH = (A & 0xF) + (val & 0xF) + carry > 0xF ? 1 : 0;
 			flagC = A + val + carry > 0xFF ? 1 : 0;
@@ -988,9 +997,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void Sbc(byte opcode) {
-			int regIndex = (opcode & 0xF) - 8;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Sbc(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			int carry = flagC;
 			flagH = (A & 0xF) - (val & 0xF) - carry < 0 ? 1 : 0;
 			flagC = A + val + carry < 0 ? 1 : 0;
@@ -999,9 +1007,8 @@ namespace LunaGB.Core {
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
-		void Cp(byte opcode) {
-			int regIndex = (opcode & 0xF) - 8;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+		void Cp(int regIndex) {
+			byte val = GetRegisterVal(regIndex);
 			Compare(val);
 			cycles += regIndex == 6 ? 8 : 4;
 		}
@@ -1174,23 +1181,16 @@ namespace LunaGB.Core {
 
 		//Gets the value of a specified register (using the lower opcode nibble)
 		//Used for instructions like add (8 bit registers or add (hl)) or ld
-		//instructions using (hl) (index 6) are handled in the separate functions so that values can just be bytes
 		byte GetRegisterVal(int regIndex) {
 			switch(regIndex) {
-				case 0:
-					return B;
-				case 1:
-					return C;
-				case 2:
-					return D;
-				case 3:
-					return E;
-				case 4:
-					return H;
-				case 5:
-					return L;
-				case 7:
-					return A;
+				case 0: return B;
+				case 1: return C;
+				case 2: return D;
+				case 3: return E;
+				case 4: return H;
+				case 5: return L;
+				case 6: return memory.GetByte(HL);
+				case 7: return A;
 				default:
 					throw new IndexOutOfRangeException("Invalid register index");
 			}
