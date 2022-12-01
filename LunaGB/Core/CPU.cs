@@ -126,12 +126,13 @@ namespace LunaGB.Core {
 			errorOccured = false;
 		}
 
-		public string GetRegisterDebugInfo() {
+		public string GetCPUStateInfo() {
 			string s = "A = " + A.ToString("X2") + ", B = " + B.ToString("X2") + ", C = " + C.ToString("X2")
 				+ ", D = " + D.ToString("X2") + ", E = " + E.ToString("X2") + ", H = " + H.ToString("X2")
 				+ ", L = " + L.ToString("X2") + "\n";
 			s += "PC = " + pcTemp.ToString("X4") + ", SP = " + sp.ToString("X4") + "\n";
 			s += string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}\n", flagN, flagZ, flagC, flagH);
+			s += "Cycles: " + cycles;
 			return s;
 		}
 
@@ -407,8 +408,6 @@ namespace LunaGB.Core {
 						break;
 					case 0x0A:
 						//ld a,(r16)
-						val = ReadUInt16();
-					
 						if(hi == 0x00)A = memory.GetByte(BC); //0x0A
 						else if(hi == 0x01)A = memory.GetByte(DE); //0x1A
 						else if(hi == 0x02){
@@ -742,10 +741,15 @@ namespace LunaGB.Core {
 					RST(0x20);
 					break;
 				case 0xE8:
-					//add sp,n8
-					byteVal = ReadByte();
-					CheckCarry((byte)sp,byteVal);
-					sp += byteVal;
+					//add sp,r8
+					//Add a signed 8 bit value to SP
+					sbyte val = (sbyte)ReadByte();
+
+					//Not sure if this is right
+					if (val > 0) CheckCarry((byte)sp, (byte)val);
+					else CheckBorrow((byte)sp, (byte)-val);
+
+					sp = (ushort)(sp + val);
 					cycles += 16;
 					break;
 				case 0xE9:
@@ -864,7 +868,7 @@ namespace LunaGB.Core {
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
 			int regIndex = lo % 8;
-			byte val = regIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(regIndex);
+			byte val = GetRegisterVal(regIndex);
 
 			//CB00-CB3F
 			if(opcode < 0x40){
@@ -1154,16 +1158,14 @@ namespace LunaGB.Core {
 
 		//Used for all 8bit loads instructions except the 0x-3x ones
 		void Ld8(byte opcode) {
-			//calculate the index of the set register
+			//Calculate the index of the set register
 			//The opcodes are organised like this for set values:
 			//0x40: B, 0x48: C, 0x50: D, etc...
-			//index = low nibble/8 + (high nibble - 4)/16
-			byte lo = (byte)(opcode & 0xF), hi = (byte)(opcode >> 4);
-			int setRegIndex = lo / 8 + (hi - 0x4) / 16;
-			int loadRegIndex = lo;
+			int setRegIndex = (opcode - 0x40) / 8;
+			int loadRegIndex = opcode % 8;
 
 			//Load the value from the source register to the destination register
-			byte val = loadRegIndex == 6 ? memory.GetByte(HL) : GetRegisterVal(opcode & 0xF);
+			byte val = GetRegisterVal(loadRegIndex);
 			SetRegister(setRegIndex, val);
 		}
 

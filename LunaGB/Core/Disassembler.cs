@@ -5,1947 +5,264 @@ namespace LunaGB.Core {
 	public class Disassembler {
 		Memory memory;
 
-		public enum InstructionType {
-			Nop,
-			Load,
-			LoadH,
-			Inc,
-			Dec,
-			Add,
-			Adc,
-			Sub,
-			Sbc,
-			And,
-			Or,
-			Xor,
-			Rlca,
-			Rrca,
-			Rla,
-			Rra,
-			Daa,
-			Cpl,
-			Ccf,
-			Scf,
-			Compare,
-			Jump,
-			RelativeJump,
-			Call,
-			Rst,
-			Ret,
-			Reti,
-			Push,
-			Pop,
-			Di,
-			Ei,
-			Stop,
-			Halt
-		}
-
-		public enum OpcodeParam {
-			Immediate8,
-			ImmediateSigned8,
-			Immediate16,
-			A,
-			B,
-			C,
-			D,
-			E,
-			F,
-			H,
-			L,
-			AF,
-			BC,
-			DE,
-			HL,
-			SP,
-			HLMinus,
-			HLPlus,
-			Rst00,
-			Rst08,
-			Rst10,
-			Rst18,
-			Rst20,
-			Rst28,
-			Rst30,
-			Rst38,
-			SPPlusImmediate
-        }
-
-		public enum Condition {
-			None,
-			Zero,
-			Carry,
-			NotZero,
-			NoCarry
-        }
-
-		public class OpcodeParameter
-		{
-			public OpcodeParam type;
-			public bool referencesMemory; //whether the parameter references memory
-
-			public OpcodeParameter(OpcodeParam type, bool referencesMemory)
-			{
-				this.type = type;
-				this.referencesMemory = referencesMemory;
-			}
-
-			public OpcodeParameter(OpcodeParam type)
-			{
-				this.type = type;
-				referencesMemory = false;
-			}
-		}
-
-		public class Opcode {
-			public InstructionType instructionType;
-			public OpcodeParameter[] parameters;
-			public Condition condition;
-
-
-			public Opcode() { }
-
-			public Opcode(InstructionType instructionType) {
-				this.instructionType = instructionType;
-			}
-
-
-			public Opcode(InstructionType instructionType, OpcodeParameter[] parameters) {
-				this.instructionType = instructionType;
-				this.parameters = parameters;
-            }
-
-			public Opcode(InstructionType instructionType, OpcodeParameter[] parameters, Condition condition) {
-				this.instructionType = instructionType;
-				this.parameters = parameters;
-				this.condition = condition;
-			}
-		}
-
-		public Opcode[] opcodes = {
-			//00
-			new Opcode(InstructionType.Nop),
-			//01
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-					new OpcodeParameter(OpcodeParam.BC),
-					new OpcodeParameter(OpcodeParam.Immediate16)
-				}
-			),
-			//02
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.BC,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//03
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.BC)
-				}
-			),
-			//04
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//05
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//06
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//07
-			new Opcode(
-				InstructionType.Rlca
-			),
-			//08
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.Immediate16,true),
-				new OpcodeParameter(OpcodeParam.SP)
-				}
-			),
-			//09
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL),
-				new OpcodeParameter(OpcodeParam.BC)
-				}
-			),
-			//0A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.BC,true)
-				}
-			),
-			//0B
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.BC)
-				}
-			),
-			//0C
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//0D
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//0E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//0F
-			new Opcode(
-				InstructionType.Rrca
-			),
-			//00
-			new Opcode(InstructionType.Stop),
-			//01
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.DE),
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				}
-			),
-			//02
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.DE,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//03
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.DE)
-				}
-			),
-			//04
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//05
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//06
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//07
-			new Opcode(
-				InstructionType.Rla
-			),
-			//08
-			new Opcode(
-				InstructionType.RelativeJump,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.ImmediateSigned8)
-				}
-			),
-			//09
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL),
-				new OpcodeParameter(OpcodeParam.DE)
-				}
-			),
-			//0A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.DE,true)
-				}
-			),
-			//0B
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.DE)
-				}
-			),
-			//0C
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//0D
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//0E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//0F
-			new Opcode(
-				InstructionType.Rra
-			),
-			//20
-			new Opcode(
-				InstructionType.RelativeJump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.ImmediateSigned8)
-				},
-				Condition.NotZero
-			),
-			//01
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL),
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				}
-			),
-			//02
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HLPlus,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//03
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL)
-				}
-			),
-			//04
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//05
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//06
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//07
-			new Opcode(
-				InstructionType.Daa
-			),
-			//08
-			new Opcode(
-				InstructionType.RelativeJump,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.ImmediateSigned8),
-				},
-				Condition.Zero
-			),
-			//09
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL),
-				new OpcodeParameter(OpcodeParam.HL)
-				}
-			),
-			//0A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.HLPlus,true)
-				}
-			),
-			//0B
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL)
-				}
-			),
-			//0C
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//0D
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//0E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//2F
-			new Opcode(
-				InstructionType.Cpl
-			),
-			//30
-			new Opcode(
-				InstructionType.RelativeJump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.ImmediateSigned8)
-				},
-				Condition.NoCarry
-			),
-			//31
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.SP),
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				}
-			),
-			//02
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HLMinus,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//03
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.SP)
-				}
-			),
-			//04
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//05
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//06
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//07
-			new Opcode(
-				InstructionType.Scf
-			),
-			//08
-			new Opcode(
-				InstructionType.RelativeJump,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.ImmediateSigned8),
-				},
-				Condition.Carry
-			),
-			//09
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.HL),
-				new OpcodeParameter(OpcodeParam.SP)
-				}
-			),
-			//0A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.HLMinus,true)
-				}
-			),
-			//0B
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[]{
-				new OpcodeParameter(OpcodeParam.SP)
-				}
-			),
-			//3C
-			new Opcode(
-				InstructionType.Inc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//3D
-			new Opcode(
-				InstructionType.Dec,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//3E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//3F
-			new Opcode(
-				InstructionType.Ccf
-			),
-			//40
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//41
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//42
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//43
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//44
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//45
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//46
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//47
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//48
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//49
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//4A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//4B
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//4C
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//4D
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//4E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//4F
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//40
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//41
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//42
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//43
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//44
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//45
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//46
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//47
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//48
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//49
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//4A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//4B
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//4C
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//4D
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//4E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//4F
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//40
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//41
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//42
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//43
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//44
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//45
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//46
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//47
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//48
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//49
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//4A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//4B
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//4C
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//4D
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//4E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//4F
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//40
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//41
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//42
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//43
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//44
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//45
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//46
-			new Opcode(
-				InstructionType.Halt
-			),
-			//47
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//48
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//49
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//4A
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//4B
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//4C
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//4D
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//4E
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//4F
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//50
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//51
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//52
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//53
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//54
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//55
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//56
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//57
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//58
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//59
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//5A
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//5B
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//5C
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//5D
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//5E
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//5F
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//50
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//51
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//52
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//53
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//54
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//55
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//56
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//57
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//58
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//59
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//5A
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//5B
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//5C
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//5D
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//5E
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//5F
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//50
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//51
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//52
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//53
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//54
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//55
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//56
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//57
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//58
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//59
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//5A
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//5B
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//5C
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//5D
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//5E
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//5F
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//50
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//51
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//52
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//53
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//54
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//55
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//56
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//57
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//58
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.B)
-				}
-			),
-			//59
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C)
-				}
-			),
-			//5A
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.D)
-				}
-			),
-			//5B
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.E)
-				}
-			),
-			//5C
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.H)
-				}
-			),
-			//5D
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.L)
-				}
-			),
-			//5E
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-				}
-			),
-			//BF
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//C0
-			new Opcode(
-				InstructionType.Ret,
-				new OpcodeParameter[] {
-				},
-				Condition.NotZero
-			),
-			//C1
-			new Opcode(
-				InstructionType.Pop,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.BC)
-				}
-			),
-			//C2
-			new Opcode(
-				InstructionType.Jump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.NotZero
-			),
-			//C3
-			new Opcode(
-				InstructionType.Jump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				}
-			),
-			//C4
-			new Opcode(
-				InstructionType.Call,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.NotZero
-			),
-			//C5
-			new Opcode(
-				InstructionType.Push,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.BC)
-				}
-			),
-			//C6
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//C7
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst00)
-				}
-			),
-			//C8
-			new Opcode(
-				InstructionType.Ret,
-				new OpcodeParameter[] {
-				},
-				Condition.Zero
-			),
-			//C9
-			new Opcode(InstructionType.Ret),
-			//CA
-			new Opcode(
-				InstructionType.Jump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.Zero
-			),
-			//CB
-			new Opcode(),
-			//CC
-			new Opcode(
-				InstructionType.Call,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.Zero
-			),
-			//CD
-			new Opcode(
-				InstructionType.Call,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				}
-			),
-			//CE
-			new Opcode(
-				InstructionType.Adc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//CF
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst08)
-				}
-			),
-			//D0
-			new Opcode(
-				InstructionType.Ret,
-				new OpcodeParameter[] {
-				},
-				Condition.NoCarry
-			),
-			//D1
-			new Opcode(
-				InstructionType.Pop,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.DE)
-				}
-			),
-			//D2
-			new Opcode(
-				InstructionType.Jump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.NoCarry
-			),
-			//D3
-			new Opcode(),
-			//D4
-			new Opcode(
-				InstructionType.Call,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.NoCarry
-			),
-			//D5
-			new Opcode(
-				InstructionType.Push,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.DE)
-				}
-			),
-			//D6
-			new Opcode(
-				InstructionType.Sub,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//D7
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst10)
-				}
-			),
-			//D8
-			new Opcode(
-				InstructionType.Ret,
-				new OpcodeParameter[] {
-				},
-				Condition.Carry
-			),
-			//D9
-			new Opcode(InstructionType.Reti),
-			//DA
-			new Opcode(
-				InstructionType.Jump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.Carry
-			),
-			//DB
-			new Opcode(),
-			//DC
-			new Opcode(
-				InstructionType.Call,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16)
-				},
-				Condition.Carry
-			),
-			//DD
-			new Opcode(),
-			//DE
-			new Opcode(
-				InstructionType.Sbc,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//DF
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst18)
-				}
-			),
-			//E0
-			new Opcode(
-				InstructionType.LoadH,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//E1
-			new Opcode(
-				InstructionType.Pop,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL)
-				}
-			),
-			//E2
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.C,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//E3
-			new Opcode(),
-			//E4
-			new Opcode(),
-			//E5
-			new Opcode(
-				InstructionType.Push,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL)
-				}
-			),
-			//E6
-			new Opcode(
-				InstructionType.And,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//E7
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst20)
-				}
-			),
-			//E8
-			new Opcode(
-				InstructionType.Add,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.SP),
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				},
-				Condition.Zero
-			),
-			//E9
-			new Opcode(
-				InstructionType.Jump,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL,true)
-                }
-			),
-			//EA
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate16,true),
-				new OpcodeParameter(OpcodeParam.A)
-				}
-			),
-			//EB
-			new Opcode(),
-			//EC
-			new Opcode(),
-			//ED
-			new Opcode(),
-			//EE
-			new Opcode(
-				InstructionType.Xor,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//EF
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst28)
-				}
-			),
-			//F0
-			new Opcode(
-				InstructionType.LoadH,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.Immediate8,true)
-				}
-			),
-			//F1
-			new Opcode(
-				InstructionType.Pop,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.AF)
-				}
-			),
-			//F2
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.C,true)
-                }
-			),
-			//F3
-			new Opcode(InstructionType.Di),
-			//F4
-			new Opcode(),
-			//F5
-			new Opcode(
-				InstructionType.Push,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.AF)
-				}
-			),
-			//F6
-			new Opcode(
-				InstructionType.Or,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//F7
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst30)
-				}
-			),
-			//F8
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.HL),
-				new OpcodeParameter(OpcodeParam.SPPlusImmediate)
-				}
-			),
-			//F9
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.SP),
-				new OpcodeParameter(OpcodeParam.HL)
-                }
-				),
-			//FA
-			new Opcode(
-				InstructionType.Load,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.A),
-				new OpcodeParameter(OpcodeParam.Immediate16,true)
-				}
-			),
-			//FB
-			new Opcode(InstructionType.Ei),
-			//FC
-			new Opcode(),
-			//FD
-			new Opcode(),
-			//FE
-			new Opcode(
-				InstructionType.Compare,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Immediate8)
-				}
-			),
-			//FF
-			new Opcode(
-				InstructionType.Rst,
-				new OpcodeParameter[] {
-				new OpcodeParameter(OpcodeParam.Rst38)
-				}
-			),
-		};
-
-		string[] instructionNames = {
-			"nop",
-			"ld",
-			"ldh",
-			"inc",
-			"dec",
-			"add",
-			"adc",
-			"sub",
-			"sbc",
-			"and",
-			"or",
-			"xor",
-			"rlca",
-			"rrca",
-			"rla",
-			"rra",
-			"sla",
-			"sra",
-			"daa",
-			"cpl",
-			"ccf",
-			"scf",
-			"cp",
-			"jp",
-			"jr",
-			"call",
-			"rst",
-			"ret",
-			"reti",
-			"push",
-			"pop",
-			"di",
-			"ei",
-			"stop",
-			"halt"
+		//Taken from mgbdis
+        string[] instructions = {
+		"nop",
+		"ld bc,d16",
+		"ld [bc],a",
+		"inc bc",
+		"inc b",
+		"dec b",
+		"ld b,d8",
+		"rlca",
+		"ld [a16],sp",
+		"add hl,bc",
+		"ld a,[bc]",
+		"dec bc",
+		"inc c",
+		"dec c",
+		"ld c,d8",
+		"rrca",
+		"stop",
+		"ld de,d16",
+		"ld [de],a",
+		"inc de",
+		"inc d",
+		"dec d",
+		"ld d,d8",
+		"rla",
+		"jr pc+r8",
+		"add hl,de",
+		"ld a,[de]",
+		"dec de",
+		"inc e",
+		"dec e",
+		"ld e,d8",
+		"rra",
+		"jr nz,pc+r8",
+		"ld hl,d16",
+		"ld [hl+],a",
+		"inc hl",
+		"inc h",
+		"dec h",
+		"ld h,d8",
+		"daa",
+		"jr z,pc+r8",
+		"add hl,hl",
+		"ld a,[hl+]",
+		"dec hl",
+		"inc l",
+		"dec l",
+		"ld l,d8",
+		"cpl",
+		"jr nc,pc+r8",
+		"ld sp,d16",
+		"ld [hl-],a",
+		"inc sp",
+		"inc [hl]",
+		"dec [hl]",
+		"ld [hl],d8",
+		"scf",
+		"jr c,pc+r8",
+		"add hl,sp",
+		"ld a,[hl-]",
+		"dec sp",
+		"inc a",
+		"dec a",
+		"ld a,d8",
+		"ccf",
+		"ld b,b",
+		"ld b,c",
+		"ld b,d",
+		"ld b,e",
+		"ld b,h",
+		"ld b,l",
+		"ld b,[hl]",
+		"ld b,a",
+		"ld c,b",
+		"ld c,c",
+		"ld c,d",
+		"ld c,e",
+		"ld c,h",
+		"ld c,l",
+		"ld c,[hl]",
+		"ld c,a",
+		"ld d,b",
+		"ld d,c",
+		"ld d,d",
+		"ld d,e",
+		"ld d,h",
+		"ld d,l",
+		"ld d,[hl]",
+		"ld d,a",
+		"ld e,b",
+		"ld e,c",
+		"ld e,d",
+		"ld e,e",
+		"ld e,h",
+		"ld e,l",
+		"ld e,[hl]",
+		"ld e,a",
+		"ld h,b",
+		"ld h,c",
+		"ld h,d",
+		"ld h,e",
+		"ld h,h",
+		"ld h,l",
+		"ld h,[hl]",
+		"ld h,a",
+		"ld l,b",
+		"ld l,c",
+		"ld l,d",
+		"ld l,e",
+		"ld l,h",
+		"ld l,l",
+		"ld l,[hl]",
+		"ld l,a",
+		"ld [hl],b",
+		"ld [hl],c",
+		"ld [hl],d",
+		"ld [hl],e",
+		"ld [hl],h",
+		"ld [hl],l",
+		"halt",
+		"ld [hl],a",
+		"ld a,b",
+		"ld a,c",
+		"ld a,d",
+		"ld a,e",
+		"ld a,h",
+		"ld a,l",
+		"ld a,[hl]",
+		"ld a,a",
+		"add b",
+		"add c",
+		"add d",
+		"add e",
+		"add h",
+		"add l",
+		"add [hl]",
+		"add a",
+		"adc b",
+		"adc c",
+		"adc d",
+		"adc e",
+		"adc h",
+		"adc l",
+		"adc [hl]",
+		"adc a",
+		"sub b",
+		"sub c",
+		"sub d",
+		"sub e",
+		"sub h",
+		"sub l",
+		"sub [hl]",
+		"sub a",
+		"sbc b",
+		"sbc c",
+		"sbc d",
+		"sbc e",
+		"sbc h",
+		"sbc l",
+		"sbc [hl]",
+		"sbc a",
+		"and b",
+		"and c",
+		"and d",
+		"and e",
+		"and h",
+		"and l",
+		"and [hl]",
+		"and a",
+		"xor b",
+		"xor c",
+		"xor d",
+		"xor e",
+		"xor h",
+		"xor l",
+		"xor [hl]",
+		"xor a",
+		"or b",
+		"or c",
+		"or d",
+		"or e",
+		"or h",
+		"or l",
+		"or [hl]",
+		"or a",
+		"cp b",
+		"cp c",
+		"cp d",
+		"cp e",
+		"cp h",
+		"cp l",
+		"cp [hl]",
+		"cp a",
+		"ret nz",
+		"pop bc",
+		"jp nz,a16",
+		"jp a16",
+		"call nz,a16",
+		"push bc",
+		"add d8",
+		"rst $00",
+		"ret z",
+		"ret",
+		"jp z,a16",
+		"CBPREFIX",
+		"call z,a16",
+		"call a16",
+		"adc d8",
+		"rst $08",
+		"ret nc",
+		"pop de",
+		"jp nc,a16",
+		"db $d3",
+		"call nc,a16",
+		"push de",
+		"sub d8",
+		"rst $10",
+		"ret c",
+		"reti",
+		"jp c,a16",
+		"db $db",
+		"call c,a16",
+		"db $dd",
+		"sbc d8",
+		"rst $18",
+		"ldh [a8],a",
+		"pop hl",
+		"ld [c],a",
+		"db $e3",
+		"db $e4",
+		"push hl",
+		"and d8",
+		"rst $20",
+		"add sp,r8",
+		"jp hl",
+		"ld [a16],a",
+		"db $eb",
+		"db $ec",
+		"db $ed",
+		"xor d8",
+		"rst $28",
+		"ldh a,[a8]",
+		"pop af",
+		"ld a,[c]",
+		"di",
+		"db $f4",
+		"push af",
+		"or d8",
+		"rst $30",
+		"ld hl,sp+r8",
+		"ld sp,hl",
+		"ld a,[a16]",
+		"ei",
+		"db $fc",
+		"db $fd",
+		"cp d8",
+		"rst $38",
 		};
 
 		string[] registerParams =
@@ -1971,10 +288,9 @@ namespace LunaGB.Core {
 		/// <param name="address"></param>
 		/// <returns></returns>
 		public string Disassemble(int address) {
-			string instructionString = "";
+			string newInstructionString = "";
 			byte opcode = memory.GetByte(address++);
-			Opcode opcodeData = opcodes[opcode];
-			InstructionType type = opcodeData.instructionType;
+			string instructionString = instructions[opcode];
 
 			//CB instructions
 			if (opcode == 0xCB)
@@ -1996,7 +312,7 @@ namespace LunaGB.Core {
 					opcode < 0x38 ? "swap":
 					"srl";
 
-					instructionString = instructionName + " " + param;
+					newInstructionString = instructionName + " " + param;
 				}
 				else
 				{
@@ -2004,115 +320,62 @@ namespace LunaGB.Core {
 					instructionName = opcode < 0x80 ? "bit" : opcode < 0xC0 ? "res" : "set";
 					int bitNum = (opcode % 0x40)/8;
 
-					instructionString = instructionName + " " + bitNum + "," + param;
+					newInstructionString = instructionName + " " + bitNum + "," + param;
 				}
 
 			}
 			else
 			{
 				//Regular instructions
-				instructionString += instructionNames[(int)type];
-				string arg1 = "", arg2 = "";
+				newInstructionString = instructionString;
 
-				//Check if the opcode has parameters
-				if (opcodeData.parameters != null && opcodeData.parameters.Length > 0)
+				//Jump offset parameter
+				if (newInstructionString.Contains("pc+r8"))
 				{
-					OpcodeParameter param1 = opcodeData.parameters[0];
-					if (type == InstructionType.Rst)
-					{
-						arg1 = (param1.type == OpcodeParam.Rst00 ? "0x00" : param1.type == OpcodeParam.Rst08 ? "0x08" : param1.type == OpcodeParam.Rst10 ? "0x10" : param1.type == OpcodeParam.Rst18 ? "0x18" : param1.type == OpcodeParam.Rst20 ? "0x20" : param1.type == OpcodeParam.Rst28 ? "0x28" : param1.type == OpcodeParam.Rst30 ? "0x30" : param1.type == OpcodeParam.Rst38 ? "0x38" : "");
-					}
-					else arg1 = ParamToString(param1, address);
-
-					//Check if the instruction has 2 parameters
-					if (opcodeData.parameters.Length == 2)
-					{
-						arg2 = ParamToString(opcodeData.parameters[1], address);
-					}
+					sbyte jumpOffset = (sbyte)memory.GetByte(address++);
+					ushort newAddress = (ushort)(address - Math.Abs(jumpOffset));
+					newInstructionString = newInstructionString.Replace("pc+r8","$" + newAddress.ToString("X"));
 				}
 
-				string condition = (opcodeData.condition != Condition.None ? opcodeData.condition == Condition.Zero ? "z," : opcodeData.condition == Condition.Carry ? "c," : opcodeData.condition == Condition.NotZero ? "nz," : "nc," : "");
+				//Signed 8bit parameter (add sp,r8)
+				if (newInstructionString.Contains("r8"))
+				{
+					sbyte val = (sbyte)memory.GetByte(address++);
+					newInstructionString = newInstructionString.Replace("r8", val.ToString());
+				}
 
-				instructionString += " " + condition + arg1 + (arg2 != "" ? "," + arg2 : "");
-			}
+				//8bit address offset (ldh)
+				if (newInstructionString.Contains("a8"))
+				{
+					ushort hramAddress = (ushort)(0xFF00 + memory.GetByte(address++));
+					newInstructionString = newInstructionString.Replace("a8", "$" + hramAddress.ToString("X"));
+				}
 
-			return instructionString;
-		}
-
-		public string ParamToString(OpcodeParameter param, int address)
-		{
-			string result = "";
-
-			switch (param.type)
-			{
-				case OpcodeParam.Immediate8:
-					byte b = memory.GetByte(address++);
-					result = "$" + b.ToString("X2");
-					break;
-				//Only used for relative jump instructions
-				case OpcodeParam.ImmediateSigned8:
-					sbyte offset = (sbyte)memory.GetByte(address++);
-					result = "pc" + (offset < 0 ? "-" + (-offset - 2) : "+" + (offset - 2)); //Subtract the offset by 2 to account for the 2 instruction bytes
-					break;
-				case OpcodeParam.Immediate16:
+				//16bit address
+				if (newInstructionString.Contains("a16"))
+				{
 					ushort val = memory.GetUInt16(address);
 					address += 2;
-					result = "0x" + val.ToString("X");
-					break;
-				case OpcodeParam.SPPlusImmediate:
-					b = memory.GetByte(address++);
-					result = "sp+0x" + b.ToString("X2");
-					break;
-				case OpcodeParam.A:
-					result = "a";
-					break;
-				case OpcodeParam.B:
-					result = "b";
-					break;
-				case OpcodeParam.C:
-					result = "c";
-					break;
-				case OpcodeParam.D:
-					result = "d";
-					break;
-				case OpcodeParam.E:
-					result = "e";
-					break;
-				case OpcodeParam.F:
-					result = "f";
-					break;
-				case OpcodeParam.H:
-					result = "h";
-					break;
-				case OpcodeParam.L:
-					result = "l";
-					break;
-				case OpcodeParam.AF:
-					result = "af";
-					break;
-				case OpcodeParam.BC:
-					result = "bc";
-					break;
-				case OpcodeParam.DE:
-					result = "de";
-					break;
-				case OpcodeParam.HL:
-				case OpcodeParam.HLMinus:
-				case OpcodeParam.HLPlus:
-					result = "hl";
-					if (param.type != OpcodeParam.HL)
-					{
-						result += (param.type == OpcodeParam.HLMinus ? "-" : param.type == OpcodeParam.HLPlus ? "+" : "");
-					}
-					break;
-				case OpcodeParam.SP:
-					result = "sp";
-					break;
+					newInstructionString = newInstructionString.Replace("a16", "$" + val.ToString("X"));
+				}
+
+				//Unsigned 8bit parameter
+				if (newInstructionString.Contains("d8"))
+				{
+					byte val = memory.GetByte(address++);
+					newInstructionString = newInstructionString.Replace("d8", "$" + val.ToString("X2"));
+				}
+
+				//Unsigned 16bit parameter
+				if (newInstructionString.Contains("d16"))
+				{
+					ushort val = memory.GetUInt16(address);
+					address += 2;
+					newInstructionString = newInstructionString.Replace("d16", "$" + val.ToString("X"));
+				}
 			}
 
-			if (param.referencesMemory) result = "[" + result + "]";
-
-			return result;
+			return newInstructionString;
 		}
 	}
 }

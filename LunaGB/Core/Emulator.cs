@@ -15,7 +15,7 @@ namespace LunaGB.Core
 		public bool isRunning = false;
 		public bool paused = false;
 		public bool loadedRom => rom.loadedRom;
-		public bool debug = true;
+		public bool debug = false;
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
 
@@ -46,16 +46,16 @@ namespace LunaGB.Core
         public void Run() {
             while (isRunning) {
 				while(cpu.cycles < maxCycles) {
-					if (debug)
-					{
+					if (debug){
 						Console.WriteLine(disassembler.Disassemble(cpu.pc));
-						//Console.WriteLine(cpu.GetRegisterDebugInfo());
+						Console.WriteLine(cpu.GetCPUStateInfo());
 						Console.WriteLine();
 					}
 					cpu.ExecuteInstruction();
 					//If an error occured within the CPU, stop the emulator.
 					if(cpu.errorOccured == true) {
 						isRunning = false;
+						Console.WriteLine(cpu.GetCPUStateInfo());
 						break;
 					}
 					//CheckSCRegister();
