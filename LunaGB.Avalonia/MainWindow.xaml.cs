@@ -5,16 +5,20 @@ using Avalonia.Media.Imaging;
 using Avalonia.Input;
 using Avalonia.Threading;
 using System;
+using System.Threading;
 using System.IO;
 using System.Collections.Generic;
 using LunaGB.Core;
 using LunaGB.Graphics;
+using LunaGB.Core.Debug;
 
 namespace LunaGB.Avalonia {
     public partial class MainWindow : Window {
 
         Emulator emulator;
         Image imageBox;
+        CancellationTokenSource cToken;
+        Thread emuThread;
 
         //Keyboard button map
         public static Dictionary<Key,Input.Button> buttonKeys = new Dictionary<Key,Input.Button>{
@@ -35,8 +39,10 @@ namespace LunaGB.Avalonia {
             emulator = new Emulator();
             KeyDown += OnKeyDown;
             KeyUp += OnKeyUp;
+            Debugger.OnHitBreakpoint += OnHitBreakpoint;
+			cToken = new CancellationTokenSource();
 
-            GBBitmap bitmap = new GBBitmap();
+			GBBitmap bitmap = new GBBitmap();
             for (int x = 0; x < 160; x++) {
                 for (int y = 0; y < 144; y++) {
                     if ((x + y) % 2 == 0) {
@@ -56,6 +62,12 @@ namespace LunaGB.Avalonia {
         }
 
         public async void LoadROM() {
+            if (emulator.isRunning)
+            {
+                emulator.isRunning = false;
+                StopEmulation();
+                cToken = new CancellationTokenSource();
+            }
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filters = new List<FileDialogFilter>();
             dialog.Title = "Open ROM file";
@@ -75,7 +87,8 @@ namespace LunaGB.Avalonia {
                      emulator.LoadROM(romName);
                     //If the ROM successfully loaded, start the emulator
                     if(emulator.loadedRom) {
-                        emulator.Start();
+                        emuThread = new Thread(() => emulator.Start(cToken.Token));
+                        emuThread.Start();
                     }
                  }
              }
@@ -104,18 +117,44 @@ namespace LunaGB.Avalonia {
 
         public void StopEmulation() {
             emulator.Stop();
+            cToken.Cancel();
+
+        }
+
+        
+        void OnHitBreakpoint(Breakpoint breakpoint)
+        {
+            Console.WriteLine("Breakpoint hit");
+            emulator.PrintDebugInfo();
+			emulator.paused = true; //Pause the emulator;
         }
 
 
         private void OnKeyDown(object? sender, KeyEventArgs e) {
-            Console.WriteLine("Pressed key");
             if(buttonKeys.ContainsKey(e.Key)){
                 Input.OnButtonDown(buttonKeys[e.Key]);
             }
-        }
+
+            //Step
+            if(e.Key == Key.D1 && emulator.isRunning)
+            {
+                if (!emulator.paused) emulator.paused = true;
+                emulator.DoSingleStep();
+            }
+
+			//Pause
+			if (e.Key == Key.P && emulator.isRunning)
+			{
+				emulator.paused = !emulator.paused;
+                if (emulator.paused) Console.WriteLine("Emulation paused");
+                else
+                {
+                    Console.WriteLine("Emulation resumed");
+                }
+			}
+		}
 
 		private void OnKeyUp(object? sender, KeyEventArgs e) {
-			Console.WriteLine("Released key");
 			if(buttonKeys.ContainsKey(e.Key)) {
 				Input.OnButtonUp(buttonKeys[e.Key]);
 			}

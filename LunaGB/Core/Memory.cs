@@ -1,4 +1,6 @@
 ﻿using System;
+using LunaGB.Core.Debug;
+
 namespace LunaGB.Core
 {
 	public class Memory
@@ -27,10 +29,16 @@ namespace LunaGB.Core
 
 		public ROM rom;
 
+		public delegate void MemoryReadWriteEvent(int address);
+		public event MemoryReadWriteEvent OnMemoryRead;
+		public event MemoryReadWriteEvent OnMemoryWrite;
+
 
 		public Memory(ROM rom)
 		{
 			this.rom = rom;
+			OnMemoryRead += Debugger.OnMemoryRead;
+			OnMemoryWrite += Debugger.OnMemoryWrite;
 		}
 
 		public void Init(){
@@ -50,6 +58,12 @@ namespace LunaGB.Core
 
 		//Gets the byte located at the given address.
 		public byte GetByte(int address) {
+			//If breakpoints are enabled, invoke the event to check if any of the breakpoints were hit.
+			if (Debugger.breakpointsEnabled && !Debugger.stepping)
+			{
+				OnMemoryRead?.Invoke(address);
+			}
+
 			if(address < 0x4000){
 				//ROM Bank Slot 0
 				//0000-3FFF
@@ -115,7 +129,13 @@ namespace LunaGB.Core
         }
 
 		public void WriteByte(int address, byte b) {
-			if(address < 0x4000){
+			//If breakpoints are enabled, invoke the event to check if any of the breakpoints were hit.
+			if (Debugger.breakpointsEnabled && !Debugger.stepping)
+			{
+				OnMemoryWrite?.Invoke(address);
+			}
+
+			if (address < 0x4000){
 				//ROM Bank Slot 0
 				//0000-3FFF
 				rom.romMapper.SetByte(address,b);

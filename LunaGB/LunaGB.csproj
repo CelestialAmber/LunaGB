@@ -19,11 +19,15 @@
     <None Remove="Avalonia.Desktop" />
     <None Remove="SixLabors.ImageSharp" />
     <None Remove="Graphics\" />
+    <None Remove="Tests\" />
+    <None Remove="Core\Debugger\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Core\" />
     <Folder Include="Core\Cartridges\" />
     <Folder Include="Graphics\" />
+    <Folder Include="Tests\" />
+    <Folder Include="Core\Debugger\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />

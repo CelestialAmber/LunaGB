@@ -1,4 +1,5 @@
 ﻿using System;
+using LunaGB.Core.Debug;
 
 namespace LunaGB.Core
 {
@@ -15,9 +16,10 @@ namespace LunaGB.Core
 		public bool isRunning = false;
 		public bool paused = false;
 		public bool loadedRom => rom.loadedRom;
-		public bool debug = false;
+		public bool debug = true;
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
+
 
 
 		public Emulator()
@@ -36,34 +38,63 @@ namespace LunaGB.Core
         }
 
 		//Starts the emulator.
-		public void Start() {
+		public void Start(CancellationToken token) {
 			isRunning = true;
+			Debugger.InitBreakpoints();
 			memory.Init();
 			cpu.Init();
-			Run();
+			Run(token);
         }
 
-        public void Run() {
-            while (isRunning) {
-				while(cpu.cycles < maxCycles) {
-					if (debug){
-						Console.WriteLine(disassembler.Disassemble(cpu.pc));
-						Console.WriteLine(cpu.GetCPUStateInfo());
-						Console.WriteLine();
-					}
-					cpu.ExecuteInstruction();
-					//If an error occured within the CPU, stop the emulator.
-					if(cpu.errorOccured == true) {
-						isRunning = false;
-						Console.WriteLine(cpu.GetCPUStateInfo());
-						break;
-					}
-					//CheckSCRegister();
+		public void Run(CancellationToken token) {
+			while (isRunning && !token.IsCancellationRequested) {
+				if (paused) {
+					Thread.Sleep(1000);
+					continue;
 				}
-				cpu.cycles = 0;
-				Thread.Sleep(1);
+
+				Step();
+
+				//If an error occured within the CPU, stop the emulator.
+				if (cpu.errorOccured == true){
+					isRunning = false;
+					Console.WriteLine(cpu.GetCPUStateInfo());
+					break;
+				}
+
+				//CheckSCRegister();
+				if (cpu.cycles >= maxCycles) cpu.cycles = 0;
 			}
         }
+
+		public void DoSingleStep()
+		{
+			PrintDebugInfo();
+			Debugger.stepping = true;
+			Step();
+			Debugger.stepping = false;
+
+			//If an error occured within the CPU, stop the emulator.
+			if (cpu.errorOccured == true)
+			{
+				isRunning = false;
+				Console.WriteLine(cpu.GetCPUStateInfo());
+				return;
+			}
+			//CheckSCRegister();
+
+			if (cpu.cycles >= maxCycles) cpu.cycles = 0;
+		}
+
+		public void Step()
+		{
+			if (debug)
+			{
+				PrintDebugInfo();
+			}
+
+			cpu.ExecuteInstruction();
+		}
 
 		//Stops the emulator.
 		public void Stop() {
@@ -87,6 +118,13 @@ namespace LunaGB.Core
 				Console.WriteLine(testRomString);
             }
         }
+
+		public void PrintDebugInfo()
+		{
+			Console.WriteLine(disassembler.Disassemble(cpu.pc));
+			Console.WriteLine(cpu.GetCPUStateInfo());
+			Console.WriteLine();
+		}
 
     }
 }

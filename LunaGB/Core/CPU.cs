@@ -1,4 +1,6 @@
 ﻿using System;
+using LunaGB.Core.Debug;
+
 namespace LunaGB.Core {
 	public class CPU {
 
@@ -138,6 +140,13 @@ namespace LunaGB.Core {
 
 		public void ExecuteInstruction() {
 			pcTemp = pc; //store the starting pc for the debug message
+
+			//If breakpoints are enabled, check whether one of them would be hit by executing the next instruction.
+			if (Debugger.breakpointsEnabled && !Debugger.stepping)
+			{
+				Debugger.OnExecute(pc);
+			}
+
 			byte opcode = ReadByte();
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
@@ -753,8 +762,8 @@ namespace LunaGB.Core {
 					cycles += 16;
 					break;
 				case 0xE9:
-					//jp (hl)
-					pc = memory.GetByte(HL);
+					//jp hl
+					pc = HL;
 					cycles += 4;
 					break;
 				case 0xEA:
