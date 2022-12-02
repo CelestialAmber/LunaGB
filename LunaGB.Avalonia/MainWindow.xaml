@@ -17,8 +17,9 @@
                     <MenuItem Header ="_Load ROM" Command="{Binding LoadROM}"/>
                 </MenuItem>
                 <MenuItem Header="_Emulation">
-                    <MenuItem Header ="_Pause" Command="{Binding Nyeh}"/>
-                    <MenuItem Header ="_Stop" Command="{Binding Nyeh}"/>
+                    <MenuItem Header ="_Pause" Command="{Binding OnClickPauseButton}"/>
+                    <MenuItem Header ="_Stop" Command="{Binding OnClickStopButton}"/>
+                    <MenuItem Header ="_Step" Command="{Binding OnClickStepButton}"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header ="_About" Command="{Binding Nyeh}"/>

@@ -54,6 +54,11 @@ namespace LunaGB.Avalonia {
         }
 
         protected override bool HandleClosing() {
+            //If the emulator is still running, stop it before closing
+            if (emulator.isRunning)
+            {
+                StopEmulation();
+            }
             return base.HandleClosing();
         }
 
@@ -66,9 +71,11 @@ namespace LunaGB.Avalonia {
             {
                 emulator.isRunning = false;
                 StopEmulation();
-                cToken = new CancellationTokenSource();
             }
-            OpenFileDialog dialog = new OpenFileDialog();
+
+			cToken = new CancellationTokenSource();
+
+			OpenFileDialog dialog = new OpenFileDialog();
             dialog.Filters = new List<FileDialogFilter>();
             dialog.Title = "Open ROM file";
             FileDialogFilter gbFilter = new FileDialogFilter();
@@ -94,6 +101,34 @@ namespace LunaGB.Avalonia {
              }
         }
 
+
+        //TODO: when the emulator isn't running, the stop button should be greyed out
+        public void OnClickStopButton()
+        {
+            if (emulator.isRunning)
+            {
+                StopEmulation();
+            }
+        }
+
+        //TODO: make the pause button change to resume if already paused
+        public void OnClickPauseButton()
+        {
+            if (emulator.isRunning)
+            {
+                TogglePause();
+            }
+        }
+
+        public void OnClickStepButton()
+        {
+            if (emulator.isRunning)
+            {
+                EmulatorStep();
+            }
+        }
+
+
         private void OnWindowSizeChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
             if (e.Property.Name.Equals("ClientSize", StringComparison.CurrentCulture)) {
                 var imageBox = this.FindControl<Image>("ImageBox");
@@ -113,13 +148,23 @@ namespace LunaGB.Avalonia {
 
         public void TogglePause() {
             emulator.paused = !emulator.paused;
-        }
+
+			if (emulator.paused) Console.WriteLine("Emulation paused");
+			else Console.WriteLine("Emulation resumed");
+		}
 
         public void StopEmulation() {
             emulator.Stop();
             cToken.Cancel();
-
+            Console.WriteLine("Emulation stopped");
         }
+
+        public void EmulatorStep()
+        {
+            Console.WriteLine("Performing a single step");
+			if (!emulator.paused) emulator.paused = true;
+			emulator.DoSingleStep();
+		}
 
         
         void OnHitBreakpoint(Breakpoint breakpoint)
@@ -130,6 +175,8 @@ namespace LunaGB.Avalonia {
         }
 
 
+
+
         private void OnKeyDown(object? sender, KeyEventArgs e) {
             if(buttonKeys.ContainsKey(e.Key)){
                 Input.OnButtonDown(buttonKeys[e.Key]);
@@ -138,19 +185,13 @@ namespace LunaGB.Avalonia {
             //Step
             if(e.Key == Key.D1 && emulator.isRunning)
             {
-                if (!emulator.paused) emulator.paused = true;
-                emulator.DoSingleStep();
+                EmulatorStep();
             }
 
 			//Pause
 			if (e.Key == Key.P && emulator.isRunning)
 			{
-				emulator.paused = !emulator.paused;
-                if (emulator.paused) Console.WriteLine("Emulation paused");
-                else
-                {
-                    Console.WriteLine("Emulation resumed");
-                }
+                TogglePause();
 			}
 		}
 

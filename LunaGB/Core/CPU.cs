@@ -58,7 +58,6 @@ namespace LunaGB.Core {
 		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
 		public bool interruptsEnabled; //are interrupts currently enabled?
 		bool debug = true;
-		int pcTemp; //used for the instruction debug messages
 		public bool errorOccured = false; //has the cpu ran into an error?
 
 		//Register pairs
@@ -132,21 +131,13 @@ namespace LunaGB.Core {
 			string s = "A = " + A.ToString("X2") + ", B = " + B.ToString("X2") + ", C = " + C.ToString("X2")
 				+ ", D = " + D.ToString("X2") + ", E = " + E.ToString("X2") + ", H = " + H.ToString("X2")
 				+ ", L = " + L.ToString("X2") + "\n";
-			s += "PC = " + pcTemp.ToString("X4") + ", SP = " + sp.ToString("X4") + "\n";
+			s += "PC = " + pc.ToString("X4") + ", SP = " + sp.ToString("X4") + "\n";
 			s += string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}\n", flagN, flagZ, flagC, flagH);
 			s += "Cycles: " + cycles;
 			return s;
 		}
 
 		public void ExecuteInstruction() {
-			pcTemp = pc; //store the starting pc for the debug message
-
-			//If breakpoints are enabled, check whether one of them would be hit by executing the next instruction.
-			if (Debugger.breakpointsEnabled && !Debugger.stepping)
-			{
-				Debugger.OnExecute(pc);
-			}
-
 			byte opcode = ReadByte();
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
@@ -869,6 +860,12 @@ namespace LunaGB.Core {
 					errorOccured = true;
 					break;
 			}
+			}
+
+			//If breakpoints are enabled, check whether one of them would be hit by executing the next instruction.
+			if (Debugger.breakpointsEnabled && !Debugger.stepping)
+			{
+				Debugger.OnExecute(pc);
 			}
 		}
 

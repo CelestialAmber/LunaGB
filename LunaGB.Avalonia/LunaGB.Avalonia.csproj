@@ -16,9 +16,6 @@
     <None Remove="System.Drawing.Common" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="**\*.xaml.cs">
-	<DependentUpon>%(Filename)</DependentUpon>
-  </Compile>
   <AvaloniaResource Include="**\*.xaml">
     <SubType>Designer</SubType>
   </AvaloniaResource>

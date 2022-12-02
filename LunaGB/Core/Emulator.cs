@@ -40,6 +40,7 @@ namespace LunaGB.Core
 		//Starts the emulator.
 		public void Start(CancellationToken token) {
 			isRunning = true;
+			paused = false;
 			Debugger.InitBreakpoints();
 			memory.Init();
 			cpu.Init();
@@ -55,45 +56,35 @@ namespace LunaGB.Core
 
 				Step();
 
-				//If an error occured within the CPU, stop the emulator.
-				if (cpu.errorOccured == true){
-					isRunning = false;
-					Console.WriteLine(cpu.GetCPUStateInfo());
-					break;
-				}
-
-				//CheckSCRegister();
-				if (cpu.cycles >= maxCycles) cpu.cycles = 0;
+				if (cpu.errorOccured == true) break;
 			}
         }
 
 		public void DoSingleStep()
 		{
-			PrintDebugInfo();
+			if(!debug) PrintDebugInfo();
 			Debugger.stepping = true;
 			Step();
 			Debugger.stepping = false;
-
-			//If an error occured within the CPU, stop the emulator.
-			if (cpu.errorOccured == true)
-			{
-				isRunning = false;
-				Console.WriteLine(cpu.GetCPUStateInfo());
-				return;
-			}
-			//CheckSCRegister();
-
-			if (cpu.cycles >= maxCycles) cpu.cycles = 0;
 		}
 
 		public void Step()
 		{
-			if (debug)
-			{
+			if (debug){
 				PrintDebugInfo();
 			}
 
 			cpu.ExecuteInstruction();
+
+			//If an error occured within the CPU, stop the emulator.
+			if (cpu.errorOccured == true)
+			{
+				Stop();
+				Console.WriteLine(cpu.GetCPUStateInfo());
+				return;
+			}
+
+			if (cpu.cycles >= maxCycles) cpu.cycles = 0;
 		}
 
 		//Stops the emulator.
