@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using LunaGB.Core;
 using LunaGB.Graphics;
 using LunaGB.Core.Debug;
+using LunaGB.Avalonia.Views;
 
 namespace LunaGB.Avalonia {
     public partial class MainWindow : Window {
@@ -20,8 +21,10 @@ namespace LunaGB.Avalonia {
         CancellationTokenSource cToken;
         Thread emuThread;
 
-        //Keyboard button map
-        public static Dictionary<Key,Input.Button> buttonKeys = new Dictionary<Key,Input.Button>{
+        MemoryViewer mv;
+
+		//Keyboard button map
+		public static Dictionary<Key,Input.Button> buttonKeys = new Dictionary<Key,Input.Button>{
             { Key.Up,Input.Button.Up },
 			{ Key.Down,Input.Button.Down },
 			{ Key.Left,Input.Button.Left },
@@ -120,7 +123,15 @@ namespace LunaGB.Avalonia {
             }
         }
 
-        public void OnClickStepButton()
+		public void OnClickResetButton()
+		{
+			if (emulator.isRunning)
+			{
+				Reset();
+			}
+		}
+
+		public void OnClickStepButton()
         {
             if (emulator.isRunning)
             {
@@ -128,8 +139,24 @@ namespace LunaGB.Avalonia {
             }
         }
 
+        public void OpenMemoryViewerWindow()
+        {
+            if (mv == null)
+            {
+                mv = new MemoryViewer();
+                mv.emulator = emulator;
+            }
 
-        private void OnWindowSizeChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
+            //If the memory viewer isn't open, open it
+            if (!mv.IsActive)
+            {
+                mv.Show();
+            }
+        }
+
+
+
+		private void OnWindowSizeChanged(object sender, AvaloniaPropertyChangedEventArgs e) {
             if (e.Property.Name.Equals("ClientSize", StringComparison.CurrentCulture)) {
                 var imageBox = this.FindControl<Image>("ImageBox");
                 if (imageBox != null) {
@@ -151,6 +178,16 @@ namespace LunaGB.Avalonia {
 
 			if (emulator.paused) Console.WriteLine("Emulation paused");
 			else Console.WriteLine("Emulation resumed");
+		}
+
+        public void Reset()
+        {
+			emulator.Stop();
+			cToken.Cancel();
+            cToken = new CancellationTokenSource();
+			emuThread = new Thread(() => emulator.Start(cToken.Token));
+			emuThread.Start();
+            Console.WriteLine("Emulator reset");
 		}
 
         public void StopEmulation() {

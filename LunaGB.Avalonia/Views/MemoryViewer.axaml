@@ -1,0 +1,7 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        MinWidth="160" MinHeight="164" Width="640" Height="596"
+        x:Class="LunaGB.Avalonia.Views.MemoryViewer">
+
+  Welcome to Avalonia!
+</Window>

@@ -52,14 +52,6 @@ namespace LunaGB.Core {
 			}
 		}
 
-
-		public int cycles; //current number of cycles (not divided by 4 for now)
-		public bool lowPowerMode; //low power mode flag
-		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
-		public bool interruptsEnabled; //are interrupts currently enabled?
-		bool debug = true;
-		public bool errorOccured = false; //has the cpu ran into an error?
-
 		//Register pairs
 		public ushort AF {
 			get{
@@ -100,6 +92,28 @@ namespace LunaGB.Core {
 			L = (byte)value;
 			}
 		}
+
+		//Interrupt enable flag
+		public byte IE
+		{
+			get{
+			return memory.hram[0xFF];
+			}
+
+			set{
+			memory.hram[0xFF] = value;
+			}
+		}
+
+
+		public int cycles; //current number of cycles (not divided by 4 for now)
+		public bool veryLowPowerMode; //very low power mode flag (stop)
+		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
+		public bool ime;
+		public bool lowPowerMode; //halt
+		bool haltBug; //is the halt bug active?
+		bool debug = true;
+		public bool errorOccured = false; //has the cpu ran into an error?
 
 		Memory memory;
 
@@ -142,6 +156,13 @@ namespace LunaGB.Core {
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
 
+			//If the halt bug is active, pc isn't incremented, so this byte is read twice. The CPU goes back to normal after.
+			if (haltBug)
+			{
+				haltBug = false;
+				pc--;
+			}
+
 			if(opcode < 0x40){
 				switch(lo){
 					case 0x00:
@@ -149,9 +170,10 @@ namespace LunaGB.Core {
 							//nop
 							cycles += 4;
 						}else if(opcode == 0x10){
-							//enter low power mode, also used to switch between gbc and gb cpu modes
+							//stop
+							//enter very low power mode, also used to switch between gbc and gb cpu modes
 							//not sure how this behaves
-							lowPowerMode = true;
+							veryLowPowerMode = true;
 						}else if(opcode == 0x20){
 							//jr nz,n8
 							//relative jump if zero flag not set
@@ -459,6 +481,47 @@ namespace LunaGB.Core {
 					//The halt instruction takes the place of ld (hl),(hl)
 					if(opcode == 0x76){
 						//halt
+
+						/*
+						Enters low power mode until an interrupt happens.
+
+						Instruction behavior:
+
+						If IME is true:
+						CPU enters low power mode until after an interrupt is about to be serviced.
+						The interrupt happens normally, and the CPU goes back to normal.
+
+						If IME is false:
+						Behavior depends on if an interrupt is pending (IE & IF != 0):
+
+						No interrupts pending:
+						When an interrupt becomes pending, the CPU resumes (same as if IME is true,
+						but the handler isn't cclled)
+
+						Interrupts pending:
+						CPU continues after halt, but next byte is read twice (halt bug)
+						*/
+
+						if (ime)
+						{
+							lowPowerMode = true;
+						}
+						else
+						{
+							if (CheckIfInterruptPending() == true)
+							{
+								/*
+								If there is an interrupt pending and ime is false, the halt bug is triggered.
+								This is emulated by using a bool to keep track of whether it's active or not.
+								*/
+								haltBug = true;
+							}
+							else
+							{
+								lowPowerMode = true;
+							}
+						}
+
 					}else{
 						//main load instructions
 						Ld8(opcode);
@@ -667,7 +730,7 @@ namespace LunaGB.Core {
 				case 0xD9:
 					//reti
 					Return();
-					interruptsEnabled = true;
+					ime = true;
 					cycles += 16;
 					break;
 				case 0xDA:
@@ -797,7 +860,7 @@ namespace LunaGB.Core {
 				case 0xF3:
 					//di (4 cycles)
 					//Disable interrupts
-					interruptsEnabled = false;
+					ime = false;
 					cycles += 4;
 					break;
 				case 0xF5:
@@ -841,7 +904,7 @@ namespace LunaGB.Core {
 				case 0xFB:
 					//ei
 					//Enable interrupts
-					interruptsEnabled = true;
+					ime = true;
 					cycles += 4;
 					break;
 				case 0xFE:
@@ -1278,5 +1341,12 @@ namespace LunaGB.Core {
 			pc = vector;
 			cycles += 16;
         }
+
+		//Checks whether an interrupt is pending (IE & IF != 0)
+		bool CheckIfInterruptPending()
+		{
+			byte ifReg = memory.GetIOReg(IORegister.IF);
+			return (IE & ifReg) != 0;
+		}
 	}
 }

@@ -133,7 +133,7 @@ namespace LunaGB.Core
 			loadedRom = false;
 			rom = File.ReadAllBytes(path);
 			ReadHeader();
-			PrintHeaderInfo();
+			//PrintHeaderInfo();
 			DetermineROMMapper();
 			if(!mapperSupported) return; //If the ROM uses an unsupported mapper, return
 			romMapper.rom = rom;

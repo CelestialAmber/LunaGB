@@ -7,6 +7,8 @@ namespace LunaGB.Core.Debug
 		//Breakpoint condition flags
 		public bool read, write, execute;
 		public int minAddress, maxAddress;
+		public byte value; //used for breakpoints specifying a specific value that was read/written
+		public bool specificValue; //does this breakpoint specify a specific value to break on?
 		public bool enabled;
 
 		public Breakpoint(int address, bool read, bool write, bool execute)

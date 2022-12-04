@@ -14,11 +14,9 @@
     <None Remove="SixLabors.ImageSharp" />
     <None Remove="Util\" />
     <None Remove="System.Drawing.Common" />
+    <None Remove="Views\" />
   </ItemGroup>
   <ItemGroup>
-  <AvaloniaResource Include="**\*.xaml">
-    <SubType>Designer</SubType>
-  </AvaloniaResource>
     <!--This helps with theme dll-s trimming.
     If you will publish your application in self-contained mode with p:PublishTrimmed=true and it will use Fluent theme Default theme will be trimmed from the output and vice versa.
     https://github.com/AvaloniaUI/Avalonia/issues/5593 -->
@@ -36,5 +34,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Util\" />
+    <Folder Include="Views\" />
   </ItemGroup>
 </Project>

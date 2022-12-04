@@ -18,8 +18,12 @@
                 </MenuItem>
                 <MenuItem Header="_Emulation">
                     <MenuItem Header ="_Pause" Command="{Binding OnClickPauseButton}"/>
+                    <MenuItem Header ="_Reset" Command="{Binding OnClickResetButton}"/>
                     <MenuItem Header ="_Stop" Command="{Binding OnClickStopButton}"/>
+                </MenuItem>
+                <MenuItem Header="_Debug">
                     <MenuItem Header ="_Step" Command="{Binding OnClickStepButton}"/>
+                    <MenuItem Header ="_Memory Viewer" Command="{Binding OpenMemoryViewerWindow}"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header ="_About" Command="{Binding Nyeh}"/>
