@@ -924,12 +924,6 @@ namespace LunaGB.Core {
 					break;
 			}
 			}
-
-			//If breakpoints are enabled, check whether one of them would be hit by executing the next instruction.
-			if (Debugger.breakpointsEnabled && !Debugger.stepping)
-			{
-				Debugger.OnExecute(pc);
-			}
 		}
 
 		void ExecuteCBInstruction(){

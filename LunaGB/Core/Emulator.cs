@@ -18,6 +18,7 @@ namespace LunaGB.Core
 		public bool loadedRom => rom.loadedRom;
 		public bool debug = false;
 		public bool doReset;
+		public bool pausedOnBreakpoint;
 		CancellationToken ctoken;
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
@@ -66,6 +67,8 @@ namespace LunaGB.Core
 		public void DoSingleStep()
 		{
 			if(!debug) PrintDebugInfo();
+
+
 			Debugger.stepping = true;
 			Step();
 			Debugger.stepping = false;
@@ -75,6 +78,18 @@ namespace LunaGB.Core
 		{
 			if (debug){
 				PrintDebugInfo();
+			}
+
+			//If breakpoints are enabled and we're not manually stepping, check whether one of them would be hit by executing the next instruction
+			if (Debugger.breakpointsEnabled && !Debugger.stepping)
+			{
+				Debugger.OnExecute(cpu.pc);
+			}
+
+			//Wait until the emulator is unpaused or a manual step happens
+			while (paused && pausedOnBreakpoint)
+			{
+				Thread.Sleep(100);
 			}
 
 			cpu.ExecuteInstruction();

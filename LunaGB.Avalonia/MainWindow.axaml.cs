@@ -175,6 +175,7 @@ namespace LunaGB.Avalonia {
 
         public void TogglePause() {
             emulator.paused = !emulator.paused;
+            if (emulator.pausedOnBreakpoint) emulator.pausedOnBreakpoint = false;
 
 			if (emulator.paused) Console.WriteLine("Emulation paused");
 			else Console.WriteLine("Emulation resumed");
@@ -199,8 +200,15 @@ namespace LunaGB.Avalonia {
         public void EmulatorStep()
         {
             Console.WriteLine("Performing a single step");
-			if (!emulator.paused) emulator.paused = true;
-			emulator.DoSingleStep();
+
+            if (!emulator.paused) emulator.paused = true;
+            //If the emulator is paused on a breakpoint, set the variable to false to let it continue
+            if (emulator.pausedOnBreakpoint) emulator.pausedOnBreakpoint = false;
+            else
+            {
+                //Otherwise, step normally
+                emulator.DoSingleStep();
+            }
 		}
 
         
@@ -208,7 +216,8 @@ namespace LunaGB.Avalonia {
         {
             Console.WriteLine("Breakpoint hit");
             emulator.PrintDebugInfo();
-			emulator.paused = true; //Pause the emulator;
+            emulator.paused = true;
+            emulator.pausedOnBreakpoint = true;
         }
 
 
@@ -229,6 +238,20 @@ namespace LunaGB.Avalonia {
 			if (e.Key == Key.P && emulator.isRunning)
 			{
                 TogglePause();
+			}
+
+            //Toggle breakpoints
+            if(e.Key == Key.D2)
+            {
+                Debugger.breakpointsEnabled = !Debugger.breakpointsEnabled;
+                Console.WriteLine(Debugger.breakpointsEnabled ? "Breakpoints enabled" : "Breakpoints disabled");
+            }
+
+            //Toggle debug messages
+            if(e.Key == Key.D3)
+            {
+                emulator.debug = !emulator.debug;
+				Console.WriteLine(emulator.debug ? "Debug messages enabled" : "Debug messages disabled");
 			}
 		}
 

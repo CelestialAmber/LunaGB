@@ -6,7 +6,7 @@ namespace LunaGB.Core.Debug
 	public class Debugger
 	{
 		public static List<Breakpoint> breakpoints = new List<Breakpoint>();
-		public static bool breakpointsEnabled = false;
+		public static bool breakpointsEnabled = true;
 		public static bool stepping = false;
 
 		//Event for breakpoints
@@ -16,7 +16,7 @@ namespace LunaGB.Core.Debug
 		public static void InitBreakpoints()
 		{
 			breakpoints.Clear();
-			breakpoints.Add(new Breakpoint(0x0, 0x100, false, false, true));
+			breakpoints.Add(new Breakpoint(0x100, 0x200, false, false, true));
 			breakpoints[0].enabled = true;
 		}
 
