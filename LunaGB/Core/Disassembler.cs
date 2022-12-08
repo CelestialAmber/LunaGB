@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Security.Cryptography;
 
 namespace LunaGB.Core {
 	public class Disassembler {

@@ -1,7 +1,7 @@
 ﻿using System;
 namespace LunaGB.Graphics
 {
-    public struct Color
+    public class Color
     {
         public int r = 0, g = 0, b = 0, a = 255;
 

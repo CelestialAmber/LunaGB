@@ -15,6 +15,14 @@ namespace LunaGB.Graphics
         public GBBitmap()
         {
             pixels = new Color[width, height];
+
+            for(int x = 0; x < width; x++)
+            {
+                for(int y = 0; y < height; y++)
+                {
+                    pixels[x, y] = new Color();
+                }
+            }
         }
 
         public void SetPixel(int x, int y, Color color) {

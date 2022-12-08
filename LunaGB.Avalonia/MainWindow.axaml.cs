@@ -175,7 +175,6 @@ namespace LunaGB.Avalonia {
 
         public void TogglePause() {
             emulator.paused = !emulator.paused;
-            if (emulator.pausedOnBreakpoint) emulator.pausedOnBreakpoint = false;
 
 			if (emulator.paused) Console.WriteLine("Emulation paused");
 			else Console.WriteLine("Emulation resumed");
@@ -202,13 +201,7 @@ namespace LunaGB.Avalonia {
             Console.WriteLine("Performing a single step");
 
             if (!emulator.paused) emulator.paused = true;
-            //If the emulator is paused on a breakpoint, set the variable to false to let it continue
-            if (emulator.pausedOnBreakpoint) emulator.pausedOnBreakpoint = false;
-            else
-            {
-                //Otherwise, step normally
-                emulator.DoSingleStep();
-            }
+            emulator.DoSingleStep();
 		}
 
         

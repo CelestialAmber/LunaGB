@@ -1,5 +1,6 @@
 ﻿using System;
 using LunaGB.Core.Debug;
+using System.Threading;
 
 namespace LunaGB.Core
 {
@@ -20,6 +21,7 @@ namespace LunaGB.Core
 		public bool doReset;
 		public bool pausedOnBreakpoint;
 		CancellationToken ctoken;
+		object emuStepLock = new object();
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
 
@@ -53,9 +55,17 @@ namespace LunaGB.Core
 
 		public void Run() {
 			while (isRunning && !ctoken.IsCancellationRequested) {
-				if (paused) {
-					Thread.Sleep(1000);
-					continue;
+				/* If breakpoints are enabled and we're not manually stepping, check whether
+				one of them would be hit by executing the next instruction */
+				if (Debugger.breakpointsEnabled)
+				{
+					Debugger.OnExecute(cpu.pc);
+				}
+
+				//Wait until the emulator is unpaused or a manual step happens
+				while (paused)
+				{
+					Thread.Sleep(100);
 				}
 
 				Step();
@@ -66,9 +76,6 @@ namespace LunaGB.Core
 
 		public void DoSingleStep()
 		{
-			if(!debug) PrintDebugInfo();
-
-
 			Debugger.stepping = true;
 			Step();
 			Debugger.stepping = false;
@@ -76,34 +83,25 @@ namespace LunaGB.Core
 
 		public void Step()
 		{
-			if (debug){
-				PrintDebugInfo();
+			lock(emuStepLock){
+				Console.WriteLine("Step");
+				if (debug) {
+					PrintDebugInfo();
+				}
+
+				cpu.ExecuteInstruction();
+
+				//If an error occured within the CPU, stop the emulator.
+				if (cpu.errorOccured == true)
+				{
+					Stop();
+					Console.WriteLine(cpu.GetCPUStateInfo());
+					return;
+				}
+
+				CheckSCRegister();
+				if (cpu.cycles >= maxCycles) cpu.cycles = 0;
 			}
-
-			//If breakpoints are enabled and we're not manually stepping, check whether one of them would be hit by executing the next instruction
-			if (Debugger.breakpointsEnabled && !Debugger.stepping)
-			{
-				Debugger.OnExecute(cpu.pc);
-			}
-
-			//Wait until the emulator is unpaused or a manual step happens
-			while (paused && pausedOnBreakpoint)
-			{
-				Thread.Sleep(100);
-			}
-
-			cpu.ExecuteInstruction();
-
-			//If an error occured within the CPU, stop the emulator.
-			if (cpu.errorOccured == true)
-			{
-				Stop();
-				Console.WriteLine(cpu.GetCPUStateInfo());
-				return;
-			}
-
-			CheckSCRegister();
-			if (cpu.cycles >= maxCycles) cpu.cycles = 0;
 		}
 
 		//Stops the emulator.
