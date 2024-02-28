@@ -15,7 +15,7 @@ namespace LunaGB.Core.ROMMappers
         }
 
         public override void SetByte(int index, byte val) {
-            Console.WriteLine("Trying to write to ROM");
+           // throw new Exception("Trying to write to ROM");
         }
     }
 }

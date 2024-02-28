@@ -1,7 +1,9 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" MinWidth="160" MinHeight="164" Width="640" Height="596" WindowStartupLocation="CenterScreen"
         x:Class="LunaGB.Avalonia.MainWindow"
-        MinWidth="160" MinHeight="164" Width="640" Height="596" WindowStartupLocation="CenterScreen"
         Title="LunaGB"
         Icon="/Assets/icon.png">
 	     <Grid Background="Gray">
@@ -11,22 +13,23 @@
       <RowDefinition></RowDefinition>
     </Grid.RowDefinitions>
 
-    <DockPanel Background="White" Grid.Row="0">
+    <DockPanel Grid.Row="0">
       <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_File">
-                    <MenuItem Header ="_Load ROM" Command="{Binding LoadROM}"/>
+                    <MenuItem Header ="_Load ROM" Click="LoadROM"/>
                 </MenuItem>
                 <MenuItem Header="_Emulation">
-                    <MenuItem Header ="_Pause" Command="{Binding OnClickPauseButton}"/>
-                    <MenuItem Header ="_Reset" Command="{Binding OnClickResetButton}"/>
-                    <MenuItem Header ="_Stop" Command="{Binding OnClickStopButton}"/>
+                    <MenuItem Header ="_Pause" Click="OnClickPauseButton"/>
+                    <MenuItem Header ="_Reset" Click="OnClickResetButton"/>
+                    <MenuItem Header ="_Stop" Click="OnClickStopButton"/>
                 </MenuItem>
                 <MenuItem Header="_Debug">
-                    <MenuItem Header ="_Step" Command="{Binding OnClickStepButton}"/>
-                    <MenuItem Header ="_Memory Viewer" Command="{Binding OpenMemoryViewerWindow}"/>
+                    <MenuItem Header ="_Step" Click="OnClickStepButton"/>
+                    <MenuItem Header ="_Memory Viewer" Click="OpenMemoryViewerWindow"/>
+					<MenuItem Header ="_Graphics Viewer" Click="OpenGraphicsViewerWindow"/>
                 </MenuItem>
                 <MenuItem Header="_Help">
-                    <MenuItem Header ="_About" Command="{Binding Nyeh}"/>
+                    <MenuItem Header ="_About" Click="Nyeh"/>
                 </MenuItem>
             </Menu>
     </DockPanel>

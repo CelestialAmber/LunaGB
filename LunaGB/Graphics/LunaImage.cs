@@ -6,14 +6,16 @@ using SixLabors.ImageSharp.PixelFormats;
 
 namespace LunaGB.Graphics
 {
-    public class GBBitmap
+    public class LunaImage
     {
-        const int width = 160;
-        const int height = 144;
-        Color[,] pixels = new Color[width, height];
+        int width;
+        int height;
+        Color[,] pixels;
 
-        public GBBitmap()
+        public LunaImage(int width, int height)
         {
+			this.width = width;
+			this.height = height;
             pixels = new Color[width, height];
 
             for(int x = 0; x < width; x++)

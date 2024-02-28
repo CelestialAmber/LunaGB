@@ -45,6 +45,6 @@ namespace LunaGB.Core
 		//SVBK = 0x70,
 		//PCM12 = 0x76,
 		//PCM34 = 0x77
-    }
+	}
 }
 

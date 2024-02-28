@@ -5,7 +5,7 @@ namespace LunaGB.Core {
 		Memory memory;
 
 		//Taken from mgbdis
-        string[] instructions = {
+		string[] instructions = {
 		"nop",
 		"ld bc,d16",
 		"ld [bc],a",

@@ -8,13 +8,13 @@ namespace LunaGB.Core {
 		public ushort sp, pc; //stack pointer, program counter
 
 		/*
-        condition flags
-        stored in the f register
+		condition flags
+		stored in the f register
 
-        Bits (lower 4 are always 0):
-        Z N H C 0 0 0 0
-        7 6 5 4 3 2 1 0
-        */
+		Bits (lower 4 are always 0):
+		Z N H C 0 0 0 0
+		7 6 5 4 3 2 1 0
+		*/
 
 		public int flagZ {
 			get{
@@ -137,7 +137,12 @@ namespace LunaGB.Core {
 			sp = 0;
 			pc = 0x100; //Initialize the PC to 0x100 (entry point)
 			cycles = 0;
-			memory.SetIOReg(IORegister.LY, 0x91); //set LY to 0x91 for now
+			//Reset other misc flags
+			ime = false;
+			lowPowerMode = false;
+			veryLowPowerMode = false;
+			haltBug = false;
+			gbcCpuSpeed = false;
 			errorOccured = false;
 		}
 
@@ -152,6 +157,12 @@ namespace LunaGB.Core {
 		}
 
 		public void ExecuteInstruction() {
+			if(lowPowerMode){
+				//If the CPU is in low power mode, don't execute instructions
+				cycles += 4; //Increment by 4 cycles???
+				return;
+			}
+
 			byte opcode = ReadByte();
 			byte lo = (byte)(opcode & 0xF);
 			byte hi = (byte)(opcode >> 4);
@@ -181,7 +192,7 @@ namespace LunaGB.Core {
 
 							sbyte jumpOffset = (sbyte)ReadByte();
 
-                    		if(flagZ == 0) {
+							if(flagZ == 0) {
 								pc = (ushort)(pc + jumpOffset);
 								cycles += 12; //If the branch is taken, the instruction takes an extra 4 cycles
 							} else cycles += 8; //If not, it only takes 8
@@ -192,7 +203,7 @@ namespace LunaGB.Core {
 
 							sbyte jumpOffset = (sbyte)ReadByte();
 
-                    		if(flagC == 0) {
+							if(flagC == 0) {
 								pc = (ushort)(pc + jumpOffset);
 								cycles += 12; //If the branch is taken, the instruction takes an extra 4 cycles
 							} else cycles += 8; //If not, it only takes 8
@@ -361,7 +372,7 @@ namespace LunaGB.Core {
 							//Add 6 to either digit to correct them if needed
 							if(flagH == 1 || (A & 0xF) > 9) {
 								n = 6;
-                   			}
+							}
 							if(flagC == 1 || A > 0x99) {
 								n += 0x60;
 							}
@@ -403,7 +414,7 @@ namespace LunaGB.Core {
 
 							sbyte jumpOffset = (sbyte)ReadByte();
 
-                    		if(flagZ == 1) {
+							if(flagZ == 1) {
 								pc = (ushort)(pc + jumpOffset);
 								cycles += 12; //If the branch is taken, the instruction takes an extra 4 cycles
 							} else cycles += 8; //If not, it only takes 8
@@ -414,7 +425,7 @@ namespace LunaGB.Core {
 
 							sbyte jumpOffset = (sbyte)ReadByte();
 
-                    		if(flagC == 1) {
+							if(flagC == 1) {
 								pc = (ushort)(pc + jumpOffset);
 								cycles += 12; //If the branch is taken, the instruction takes an extra 4 cycles
 							} else cycles += 8; //If not, it only takes 8
@@ -1322,22 +1333,104 @@ namespace LunaGB.Core {
 			ushort val = memory.GetUInt16(sp);
 			sp += 2;
 			return val;
-        }
+		}
 
 		void Push(ushort val) {
 			//Decrease the stack pointer by 2 and push the value onto the stack
 			sp -= 2;
 			memory.WriteUInt16(sp, val);
-        }
+		}
 
 		//Calls a reset vector.
 		void RST(byte vector) {
 			pc = vector;
 			cycles += 16;
-        }
+		}
+
+		enum Interrupt{
+			VBlank,
+			LCD,
+			Timer,
+			Serial,
+			Joypad
+		}
+
+
+		//Handles any interrupts that are requested, if any.
+		//TODO: This might need to be able to service multiple interrupts
+		public void HandleInterrupts(){
+			if(CheckIfInterruptPending()){
+				byte interruptFlag = memory.GetIOReg(IORegister.IF);
+
+				//Call the corresponding hander
+				if((interruptFlag & 1) == 1){
+					//VBlank
+					CallInterruptHandler(Interrupt.VBlank);
+				}else if(((interruptFlag >> 1) & 1) == 1){
+					//LCD
+					CallInterruptHandler(Interrupt.LCD);
+				}else if(((interruptFlag >> 2) & 1) == 1){
+					//Timer
+					CallInterruptHandler(Interrupt.Timer);
+				}else if(((interruptFlag >> 3) & 1) == 1){
+					//Serial
+					CallInterruptHandler(Interrupt.Serial);
+				}else if(((interruptFlag >> 4) & 1) == 1){
+					//Joypad
+					CallInterruptHandler(Interrupt.Joypad);
+				}
+			}
+		}
+
+		/* Calls the requested interrupt handler.
+		This is done in 3 steps, taking 20 cycles total:
+		1)The CPU waits 8 cycles/2 M-cycles.
+		2)The current PC is pushed to the stack, consuming another 8 cycles.
+		3)The PC is set to the corresponding interrupt handler address, consuming 4 cycles. */
+		void CallInterruptHandler(Interrupt interrupt){
+			//Only call the interrupt if ime is set
+			if(ime){
+				ushort address = 0;
+
+				//Reset the corresponding bit in the IF register
+				memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, (int)interrupt, 0);
+				//Reset the IME flag
+				ime = false;
+				//Exit low power mode
+				if(lowPowerMode) lowPowerMode = false;
+
+				//Get the corresponding interrupt handler's address
+				switch(interrupt){
+					case Interrupt.VBlank:
+					address = 0x40;
+					break;
+					case Interrupt.LCD:
+					address = 0x48;
+					break;
+					case Interrupt.Timer:
+					address = 0x50;
+					break;
+					case Interrupt.Serial:
+					address = 0x58;
+					break;
+					case Interrupt.Joypad:
+					address = 0x60;
+					break;
+				}
+
+				//Step 1: Do nothing for 8 cycles (might be executing 2 nop instructions)
+				cycles += 8;
+				//Step 2: Push the current PC to the stack (8 cycles)
+				Push(pc);
+				cycles += 8;
+				//Step 3: Update the PC to the address of the corresponding interrupt handler (4 cycles)
+				pc = address;
+				cycles += 4;
+			}
+		}
 
 		//Checks whether an interrupt is pending (IE & IF != 0)
-		bool CheckIfInterruptPending()
+		public bool CheckIfInterruptPending()
 		{
 			byte ifReg = memory.GetIOReg(IORegister.IF);
 			return (IE & ifReg) != 0;

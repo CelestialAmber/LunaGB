@@ -3,8 +3,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" Width="640" Height="596"
-        x:Class="LunaGB.Avalonia.Views.MemoryViewer"
-		Title="Memory Viewer">
+        x:Class="LunaGB.Avalonia.Views.GraphicsViewer"
+		Title="Graphics Viewer">
 
 		<Grid>
 			<Grid.ColumnDefinitions>
@@ -13,7 +13,7 @@
     		</Grid.ColumnDefinitions>
 
 			<ScrollViewer Grid.Column="0">
-				<TextBlock Name="textbox" FontFamily="Courier"/>
+				<Image x:Name="tileDataImageBox"/>
 			</ScrollViewer>
 
 			<Panel Grid.Column="1">

@@ -34,20 +34,20 @@ namespace LunaGB.Core
 		BandaiTama5 = 0xFD,
 		HuC3 = 0xFE,
 		HuC1 = 0xFF
-    }
+	}
 
 	//contains all the rom header data
 	public struct ROMHeader {
 		/*
 		0x100-0x103: entry point
 		0x104-0x133: nintendo logo
-        /*
-        In later cartridges, the bytes at 0x13F-0x142 are the manufacturer code,
+		/*
+		In later cartridges, the bytes at 0x13F-0x142 are the manufacturer code,
 		and 0x143 is the CGB flag
 		*/
-        public string title; //0x134-0x143
-        //80: works on GBC/GB, C0: only works on GBC
-        public byte cgbFlag; //0x143
+		public string title; //0x134-0x143
+		//80: works on GBC/GB, C0: only works on GBC
+		public byte cgbFlag; //0x143
 		public string newLicenseeCode; //0x144-0x145
 		//00: doesn't support sgb, 03: supports sgb
 		public byte sgbFlag; //0x146
@@ -71,8 +71,8 @@ namespace LunaGB.Core
 		13h  MBC3+RAM+BATTERY         FFh  HuC1+RAM+BATTERY
 		*/
 		public byte cartridgeType; //0x147
-        /*
-        Values:
+		/*
+		Values:
 		00h -  32KByte (no ROM banking)
 		01h -  64KByte (4 banks)
 		02h - 128KByte (8 banks)
@@ -87,8 +87,8 @@ namespace LunaGB.Core
 		54h - 1.5MByte (96 banks)
 		*/
 		public byte romSize; //0x148
-        /*
-        Values:
+		/*
+		Values:
 		00h - None
 		01h - 2 KBytes
 		02h - 8 Kbytes
@@ -102,8 +102,8 @@ namespace LunaGB.Core
 		public byte oldLicenseeCode; //0x14B
 		//usually 0
 		public byte maskRomVersionNumber; //0x14C
-        /*
-        If the header checksum isn't correct, the game won't work on real hardware
+		/*
+		If the header checksum isn't correct, the game won't work on real hardware
 		Pseudocode for calculating the checksum:
 		x = 0;
 		for(int i = 0x134; i <= 0x14C; i++){
@@ -116,7 +116,7 @@ namespace LunaGB.Core
 		The Game Boy doesn't check this checksum
 		*/
 		public ushort globalChecksum; //0x14E-0x14F
-    }
+	}
 
 	public class ROM
 	{
@@ -139,13 +139,13 @@ namespace LunaGB.Core
 			romMapper.rom = rom;
 			romMapper.currentBank = 1; //The default bank in bank slot 1 is bank 1
 			loadedRom = true;
-        }
+		}
 
 		//Determines which ROM mapper to use based on the cartridge type in the header
 		public void DetermineROMMapper() {
 			mapperSupported = true;
 			mapper = (ROMMapper)header.cartridgeType;
-            switch (mapper) {
+			switch (mapper) {
 				case ROMMapper.Basic:
 					//Basic rom (0)
 					romMapper = new BasicCartridge();
@@ -155,8 +155,8 @@ namespace LunaGB.Core
 					//Console.WriteLine("Error: Only the basic rom mapper (0) is implemented");
 					//mapperSupported = false;
 					break;
-            }
-        }
+			}
+		}
 
 		public void ReadHeader() {
 			//Read all the information in the header
@@ -171,32 +171,32 @@ namespace LunaGB.Core
 			for(int i = 0; i < 16; i++) {
 				if (titleBytes[i] >= 0x20 && titleBytes[i] < 0x80) {
 					title += (char)titleBytes[i];
-                } else {
+				} else {
 					//If the current byte isn't a character (mostly 0), we've probably reached the end of the string
 					//This may need to be changed to account for exceptions :>
 					break;
-                }
-            }
+				}
+			}
 
-            //whether to read the new values that take up the title bytes (manufacturer code, cgb flag)
-            bool readNewValues = true;
+			//whether to read the new values that take up the title bytes (manufacturer code, cgb flag)
+			bool readNewValues = true;
 
 			byte cgbFlag = 0;
 
-            if (readNewValues) {
+			if (readNewValues) {
 				offset += 15;
 
 				//read the manufacturer code
 
 				cgbFlag = ReadByte(offset++);
-            } else {
+			} else {
 				offset += 16;
-            }
+			}
 
 			string newLicenseeCode = "";
 			//Read the two bytes as ascii chars
 			newLicenseeCode += (char)ReadByte(offset++);
-            newLicenseeCode += (char)ReadByte(offset++);
+			newLicenseeCode += (char)ReadByte(offset++);
 
 			byte sgbFlag = ReadByte(offset++);
 			byte cartridgeType = ReadByte(offset++);
@@ -208,7 +208,7 @@ namespace LunaGB.Core
 			byte headerChecksum = ReadByte(offset++);
 			ushort globalChecksum = ReadUInt16(offset);
 
-            header = new ROMHeader();
+			header = new ROMHeader();
 
 			header.title = title;
 			header.cgbFlag = cgbFlag;
@@ -222,7 +222,7 @@ namespace LunaGB.Core
 			header.maskRomVersionNumber = maskRomVersionNumber;
 			header.headerChecksum = headerChecksum;
 			header.globalChecksum = globalChecksum;
-        }
+		}
 
 		public void PrintHeaderInfo() {
 			Console.WriteLine("Header information:");
@@ -240,10 +240,10 @@ namespace LunaGB.Core
 		}
 
 
-        //TODO: This needs to changed in the future to allow for other cartridge types
-        public byte ReadByte(int index) {
+		//TODO: This needs to changed in the future to allow for other cartridge types
+		public byte ReadByte(int index) {
 			return rom[index];
-        }
+		}
 
 		public ushort ReadUInt16(int index) {
 			//The Game Boy uses little endian
@@ -251,7 +251,7 @@ namespace LunaGB.Core
 			byte hi = ReadByte(index + 1);
 
 			return (ushort)((hi << 8) + lo);
-        }
+		}
 	}
 }
 

@@ -5,6 +5,9 @@ namespace LunaGB.Graphics
     {
         public int r = 0, g = 0, b = 0, a = 255;
 
+		public static Color black = new Color(0,0,0);
+		public static Color white = new Color(255,255,255);
+
         public Color(int r, int g, int b) {
             this.r = r;
             this.g = g;
