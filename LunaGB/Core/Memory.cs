@@ -35,6 +35,8 @@ namespace LunaGB.Core
 		public event MemoryReadWriteEvent OnMemoryWrite;
 
 		public bool writeErrorOccured = false;
+		bool cpuTestMode = false;
+		byte[] cpuTestModeRam = new byte[0x10000];
 
 
 		public Memory(ROM rom, Debugger debugger)
@@ -43,6 +45,16 @@ namespace LunaGB.Core
 			this.debugger = debugger;
 			OnMemoryRead += debugger.OnMemoryRead;
 			OnMemoryWrite += debugger.OnMemoryWrite;
+		}
+
+		//Used for CPU tests
+		public Memory(){
+			rom = new ROM();
+			debugger = new Debugger();
+			OnMemoryRead += debugger.OnMemoryRead;
+			OnMemoryWrite += debugger.OnMemoryWrite;
+			debugger.breakpointsEnabled = false;
+			cpuTestMode = true;
 		}
 
 		public void Init(){
@@ -60,11 +72,29 @@ namespace LunaGB.Core
 				oam[i] = 0;
 			}
 
+			//Init the JOYP register (00111111)
+			hram[(int)IORegister.P1] = 0b00111111;
+
+			if(cpuTestMode){
+				for(int i = 0; i < 0x10000; i++){
+					cpuTestModeRam[i] = 0;
+				}
+			}
+
 			writeErrorOccured = false;
+		}
+
+		//Used by CPU test to write values to memory for initialization
+		public void WriteByteCPUTest(int address, byte b){
+			cpuTestModeRam[address] = b;
 		}
 
 		//Gets the byte located at the given address.
 		public byte GetByte(int address) {
+			if(cpuTestMode){
+				return cpuTestModeRam[address % 0x10000];
+			}
+
 			//If breakpoints are enabled, invoke the event to check if any of the breakpoints were hit.
 			if (debugger.breakpointsEnabled && !debugger.stepping)
 			{
@@ -75,13 +105,13 @@ namespace LunaGB.Core
 				//ROM Bank Slot 0
 				//0000-3FFF
 				if(rom.loadedRom){
-				return rom.romMapper.GetByte(address);
+					return rom.romMapper.GetByte(address);
 				} else return 0;
 			}else if(address < 0x8000){
 				//ROM Bank Slot 1
 				//4000-7FFF
 				if(rom.loadedRom){
-				return rom.romMapper.GetByte(address);
+					return rom.romMapper.GetByte(address);
 				}else return 0;
 			}else if(address < 0xA000){
 				//VRAM
@@ -140,6 +170,11 @@ namespace LunaGB.Core
 		}
 
 		public void WriteByte(int address, byte b) {
+			if(cpuTestMode){
+				cpuTestModeRam[address % 0x10000] = b;
+				return;
+			}
+
 			try{
 			//If breakpoints are enabled, invoke the event to check if any of the breakpoints were hit.
 			if (debugger.breakpointsEnabled && !debugger.stepping)
@@ -150,11 +185,15 @@ namespace LunaGB.Core
 			if (address < 0x4000){
 				//ROM Bank Slot 0
 				//0000-3FFF
-				rom.romMapper.SetByte(address,b);
+				if(rom.loadedRom){
+					rom.romMapper.SetByte(address,b);
+				}
 			}else if(address < 0x8000){
 				//ROM Bank Slot 1
 				//4000-7FFF
-				rom.romMapper.SetByte(address,b);
+				if(rom.loadedRom){
+					rom.romMapper.SetByte(address,b);
+				}
 			}else if(address < 0xA000){
 				//VRAM
 				//8000-9FFF
@@ -226,7 +265,21 @@ namespace LunaGB.Core
 
 		public void SetIOReg(IORegister reg, byte val) {
 			int index = (int)reg;
-			hram[index] = val;
+			//If the CPU tries to write to the DIV register, reset it
+			if(reg == IORegister.DIV){
+				ResetDIV();
+			}else if(reg == IORegister.P1){
+				//Only bits 4/5 are read/writeable
+				SetHRAMBit(0xFF00,4,(val >> 4) & 1);
+				SetHRAMBit(0xFF00,5,(val >> 5) & 1);
+				Input.UpdateJOYP();
+			}else{
+				hram[index] = val;
+			}
+		}
+
+		public void ResetDIV(){
+			hram[(int)IORegister.DIV] = 0;
 		}
 
 		public byte GetHRAMBit(int bit, int address) {
@@ -241,7 +294,7 @@ namespace LunaGB.Core
 		public void WriteUInt16(int address, ushort val) {
 			byte lowByte = (byte)(val & 0xFF), highByte = (byte)(val >> 8);
 			WriteByte(address,lowByte);
-			WriteByte(address + 1,highByte);
+			WriteByte((address + 1) % 0x10000,highByte);
 		}
 
 		public ushort GetUInt16(int address) {

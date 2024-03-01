@@ -2,7 +2,7 @@
 using LunaGB.Core.Debug;
 using System.Threading;
 using LunaGB.Graphics;
-using System.Numerics;
+using LunaGB.Utils;
 
 namespace LunaGB.Core
 {
@@ -19,7 +19,7 @@ namespace LunaGB.Core
 		public bool isRunning = false;
 		public bool paused = false;
 		public bool loadedRom => rom.loadedRom;
-		public bool debug = true;
+		public bool debug = false;
 		public bool doReset;
 		public bool pausedOnBreakpoint;
 		public delegate void FinishRenderingEvent();
@@ -30,7 +30,11 @@ namespace LunaGB.Core
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
 		public const float frameRate = 59.73f; //frame rate/refresh rate
 		int frameCycleCount = 0;
+		int divCycleTimer = 0;
+		int timaCycleTimer = 0;
 		int cyclesPerFrame = 0;
+		byte prevJOYP;
+		Logger logger;
 
 
 		public Emulator(Debugger debugger)
@@ -42,6 +46,8 @@ namespace LunaGB.Core
 			disassembler = new Disassembler(memory);
 			this.debugger = debugger;
 			cyclesPerFrame = (int)Math.Floor((float)maxCycles/frameRate);
+			Input.memory = memory;
+			logger = new Logger("log.txt");
 		}
 
 		//Loads the specified ROM.
@@ -53,6 +59,8 @@ namespace LunaGB.Core
 		public void Start(CancellationToken token) {
 			isRunning = true;
 			frameCycleCount = 0;
+			divCycleTimer = 0;
+			timaCycleTimer = 0;
 			paused = false;
 			debugger.InitBreakpoints();
 			memory.Init();
@@ -60,6 +68,7 @@ namespace LunaGB.Core
 			ppu.Init();
 			ctoken = token;
 			ClearScreen();
+			prevJOYP = memory.GetIOReg(IORegister.P1);
 			Run();
 		}
 
@@ -85,6 +94,7 @@ namespace LunaGB.Core
 		public void DoSingleStep()
 		{
 			debugger.stepping = true;
+			Console.WriteLine("Step");
 			Step();
 			debugger.stepping = false;
 		}
@@ -92,13 +102,25 @@ namespace LunaGB.Core
 		public void Step()
 		{
 			lock(emuStepLock){
-				if (debug && debugger.stepping) {
-					Console.WriteLine("Step");
-					RenderFrame();
+				if (debug || debugger.stepping) {
+					if(debugger.stepping) RenderFrame();
 					PrintDebugInfo();
 				}
 
 				int prevCycles = cpu.cycles;
+
+				//TODO: handle inputs and exiting stop mode
+				/*
+				STOP is terminated by one of the P10 to P13 lines going low.
+				For this reason, d-pad and/or button inputs should be enabled by writing
+				$00, $10 or $20 to the P1 register before entering STOP (depending on which
+				buttons you want to terminate the STOP on).
+				*/
+
+				//cpu.stopMode = false;
+
+				//Handle interrupts
+				cpu.HandleInterrupts();
 
 				cpu.ExecuteInstruction();
 
@@ -110,17 +132,21 @@ namespace LunaGB.Core
 					return;
 				}
 
-				//Handle interrupts
-				cpu.HandleInterrupts();
+				//Check the JOYP register to see if any buttons were pressed. If so,
+				//request a joypad interrupt.
+				CheckJOYP();
 				
 				int cyclesTaken = cpu.cycles - prevCycles;
 				frameCycleCount += cyclesTaken;
+				divCycleTimer += cyclesTaken;
+				timaCycleTimer += cyclesTaken;
 
-				CheckSCRegister();
+				//Update DIV and TIMA registers
+				UpdateDIVAndTIMA();
 
 				ppu.Step(cyclesTaken);
 
-				if(frameCycleCount > cyclesPerFrame){
+				if(frameCycleCount >= cyclesPerFrame){
 					//If we're at the end of a frame, render the screen
 					RenderFrame();
 					frameCycleCount %= cyclesPerFrame;
@@ -131,6 +157,40 @@ namespace LunaGB.Core
 					cpu.cycles = 0;
 					frameCycleCount = 0;
 				}
+			}
+		}
+
+		//Cycle numbers for how often to increment TIMA based on the selected
+		//frequency in TAC.
+		int[] tacClockIncrementFrequencyCycles = new int[]{256,4,16,64};
+
+		void UpdateDIVAndTIMA(){
+			//Check if DIV should be incremented
+			if(divCycleTimer >= 16384){
+				divCycleTimer %= 16384;
+				memory.hram[(int)IORegister.DIV]++;
+			}
+
+			//Check if TIMA should be incremented
+			byte tac = memory.GetIOReg(IORegister.TAC);
+			byte tma = memory.GetIOReg(IORegister.TMA);
+			byte tima = memory.GetIOReg(IORegister.TIMA);
+
+			int timerEnableFlag = (tac >> 2) & 1;
+			int timerClockSelect = tac & 0x3;
+
+			if(timerEnableFlag == 1){
+				int cyclesPerIncrement = tacClockIncrementFrequencyCycles[timerClockSelect];
+				while(timaCycleTimer >= cyclesPerIncrement){
+					timaCycleTimer -= cyclesPerIncrement;
+					tima++;
+					//If tima overflows, set it to tma, and request a timer interrupt
+					if(tima == 0){
+						tima = tma;
+						//memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, 2, 1);
+					}
+				}
+				memory.hram[(int)IORegister.TIMA] = tima;
 			}
 		}
 
@@ -146,22 +206,19 @@ namespace LunaGB.Core
 			isRunning = false;
 		}
 
-		//Code for blargg tests
+		void CheckJOYP(){
+			byte JOYP = memory.GetIOReg(IORegister.P1);
 
-		public string testRomString = "";
-		bool readCharacter = false;
-
-		public void CheckSCRegister() {
-			byte scReg = memory.GetIOReg(IORegister.SC);
-
-			if(scReg == 0x81 && !readCharacter) {
-				readCharacter = true;
-				byte sbReg = memory.GetIOReg(IORegister.SB);
-				testRomString += (char)sbReg;
-			}else if(readCharacter && scReg != 0x81) {
-				readCharacter = false;
-				Console.WriteLine(testRomString);
+			//Check if any of bits 0-3 of JOYP register went from high to low
+			for(int i = 0; i < 4; i++){
+				if(((prevJOYP >> i) & 1) == 1 && ((JOYP >> i) & 1) == 0){
+					//If so, request a joypad interrupt
+					memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, 4, 1);
+					break;
+				}
 			}
+
+			prevJOYP = JOYP;
 		}
 
 		public void PrintDebugInfo()

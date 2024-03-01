@@ -20,19 +20,52 @@ namespace LunaGB.Avalonia.Views
 		byte[] tilemapData = new byte[0x800];
 		int tileWidth = 16;
 		int tileHeight;
+		int tilemapIndex = 0;
+		int tilesetIndex = 0;
 		LunaImage tileDataImage;
+		LunaImage tilemapImage;
 
 		public GraphicsViewer(Emulator emulator)
 		{
 			InitializeComponent();
 
 			memory = emulator.GetMemory();
+			tilemapImage = new LunaImage(256,256);
 			UpdateTileDataImage();
 			UpdateGraphicsView();
 		}
 
-		private void OnHitUpdateButton(object sender, RoutedEventArgs e){
+		private void OnClickUpdateButton(object sender, RoutedEventArgs e){
+			UpdateSelectedTilemap();
 			UpdateGraphicsView();
+		}
+
+		private void OnChangeTilemapIndexUpDownValue(object sender, NumericUpDownValueChangedEventArgs e){
+			if(tilemapUpDown != null){
+				UpdateSelectedTilemap();
+				DrawTilemap();
+				UpdateWindowImages();
+			}
+		}
+
+		private void OnChangeTilesetIndexUpDownValue(object sender, NumericUpDownValueChangedEventArgs e){
+			if(tilesetUpDown != null){
+				UpdateSelectedTileset();
+				DrawTilemap();
+				UpdateWindowImages();
+			}
+		}
+
+		public void UpdateSelectedTilemap(){
+			if(tilemapUpDown.Value != null){
+				tilemapIndex = (int)tilemapUpDown.Value;
+			}
+		}
+
+		public void UpdateSelectedTileset(){
+			if(tilesetUpDown.Value != null){
+				tilesetIndex = (int)tilesetUpDown.Value;
+			}
 		}
 
 		public void UpdateTileDataImage(){
@@ -46,6 +79,13 @@ namespace LunaGB.Avalonia.Views
 		void UpdateGraphicsView(){
 			ReadVRAM();
 			DrawTileData();
+			DrawTilemap();
+			UpdateWindowImages();
+		}
+
+		public void UpdateWindowImages() {
+			tileDataImageBox.Source = new Bitmap(new MemoryStream(tileDataImage.ToByteArray()));
+			tilemapImageBox.Source = new Bitmap(new MemoryStream(tilemapImage.ToByteArray()));
 		}
 
 
@@ -53,12 +93,25 @@ namespace LunaGB.Avalonia.Views
 
 
 		public void ReadVRAM(){
-			for(int i = 0; i < 0x1000; i++){
+			for(int i = 0; i < 0x1800; i++){
 				tileData[i] = memory.GetByte(0x8000 + i);
 			}
 
 			for(int i = 0; i < 0x800; i++){
 				tilemapData[i] = memory.GetByte(0x9800 + i);
+			}
+		}
+
+		public void DrawTilemap(){
+			int tilemapStartOffset = tilemapIndex == 0 ? 0 : 0x400;
+
+			//Gameboy tilemaps are 32x32 tiles/256x256 pixels
+			for(int y = 0; y < 32; y++){
+				for(int x = 0; x < 32; x++){
+					int offset = tilemapStartOffset + x + y*32;
+					int tileIndex = tilesetIndex == 0 ? tilemapData[offset] : (sbyte)tilemapData[offset] + 256;
+					DrawTile(x, y, tileIndex, tilemapImage);
+				}
 			}
 		}
 
@@ -68,20 +121,14 @@ namespace LunaGB.Avalonia.Views
 			
 			for(int y = 0; y < tileHeight; y++){
 				for(int x = 0; x < tileWidth; x++){
-					DrawTile(x,y,tileIndex);
+					DrawTile(x, y, tileIndex, tileDataImage);
 					tileIndex++;
 					if(tileIndex == tiles) break;
 				}
 			}
-
-			UpdateTileDataDisplay();
 		}
 
-		public void UpdateTileDataDisplay() {
-			tileDataImageBox.Source = new Bitmap(new MemoryStream(tileDataImage.ToByteArray()));
-		}
-
-		void DrawTile(int xPos, int yPos, int tileIndex){
+		void DrawTile(int xPos, int yPos, int tileIndex, LunaImage image){
 			int tileDataOffset = tileIndex*16;
 
 			for(int y = 0; y < 8; y++){
@@ -92,7 +139,7 @@ namespace LunaGB.Avalonia.Views
 					int hi = (hiByte >> (7-x)) & 1;
 					int palIndex = lo + (hi << 1);
 					Color col = palette[palIndex];
-					tileDataImage.SetPixel(xPos*8 + x,yPos*8 + y, col);
+					image.SetPixel(xPos*8 + x,yPos*8 + y, col);
 				}
 			}
 		}

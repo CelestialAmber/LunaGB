@@ -14,6 +14,7 @@ using LunaGB.Core;
 using LunaGB.Graphics;
 using LunaGB.Core.Debug;
 using LunaGB.Avalonia.Views;
+using LunaGB.Tests.SM83Tests;
 
 namespace LunaGB.Avalonia {
 	public partial class MainWindow : Window {
@@ -74,7 +75,6 @@ namespace LunaGB.Avalonia {
 		//Called by the emulator thread to render the game screen on the window
 		public void RenderFrame(){
 			Dispatcher.UIThread.Post(() => UpdateDisplay(emulator.GetScreenBitmap().ToByteArray()));
-			//UpdateDisplay(emulator.GetScreenBitmap().ToByteArray());
 		}
 
 		public void UpdateDisplay(byte[] data) {

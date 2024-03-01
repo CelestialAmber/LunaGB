@@ -6,18 +6,31 @@
         x:Class="LunaGB.Avalonia.Views.GraphicsViewer"
 		Title="Graphics Viewer">
 
-		<Grid>
-			<Grid.ColumnDefinitions>
-      			<ColumnDefinition></ColumnDefinition>
-      			<ColumnDefinition MaxWidth="80"></ColumnDefinition>
-    		</Grid.ColumnDefinitions>
+	<Grid>
+		<Grid.ColumnDefinitions>
+    		<ColumnDefinition></ColumnDefinition>
+    		<ColumnDefinition MaxWidth="140"></ColumnDefinition>
+    	</Grid.ColumnDefinitions>
 
-			<ScrollViewer Grid.Column="0">
-				<Image x:Name="tileDataImageBox"/>
-			</ScrollViewer>
-
-			<Panel Grid.Column="1">
-				<Button Name="UpdateButton" Click="OnHitUpdateButton" VerticalAlignment="Top">Update</Button>
-			</Panel>
-		</Grid>
+		<TabControl Margin="1" Grid.Column="0">
+			<TabItem Header="Tiles">
+				<ScrollViewer>
+					<Image x:Name="tileDataImageBox"/>
+				</ScrollViewer>
+			</TabItem>
+			<TabItem Header="Tilemaps">
+				<ScrollViewer>
+					<Image x:Name="tilemapImageBox"/>
+				</ScrollViewer>
+			</TabItem>
+		</TabControl>
+		
+		<StackPanel Grid.Column="1">
+			<Button x:Name="updateButton" Click="OnClickUpdateButton">Update</Button>
+			<TextBlock Margin="0 5">Tilemap:</TextBlock>
+  			<NumericUpDown x:Name="tilemapUpDown" ValueChanged="OnChangeTilemapIndexUpDownValue" Value="0" Minimum="0" Maximum="1"/>
+			<TextBlock Margin="0 5">Tileset:</TextBlock>
+  			<NumericUpDown x:Name="tilesetUpDown" ValueChanged="OnChangeTilesetIndexUpDownValue" Value="0" Minimum="0" Maximum="1"/>
+		</StackPanel>
+	</Grid>	
 </Window>

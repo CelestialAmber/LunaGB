@@ -59,7 +59,7 @@ namespace LunaGB.Core {
 			}
 			set {
 			A = (byte)(value >> 8);
-			F = (byte)value;
+			F = (byte)(value & 0xF0); //only the top 4 bits are writeable
 			}
 		}
 
@@ -107,20 +107,26 @@ namespace LunaGB.Core {
 
 
 		public int cycles; //current number of cycles (not divided by 4 for now)
-		public bool veryLowPowerMode; //very low power mode flag (stop)
+		public bool stopMode; //very low power mode flag (stop)
 		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
 		public bool ime;
-		public bool lowPowerMode; //halt
+		public bool haltMode; //halt
 		bool haltBug; //is the halt bug active?
 		bool debug = true;
 		public bool errorOccured = false; //has the cpu ran into an error?
 
-		Memory memory;
+		public Memory memory;
 
 
 
 		public CPU(Memory memory) {
 			this.memory = memory;
+		}
+
+		//Used for CPU tests
+		public CPU(){
+			memory = new Memory();
+			memory.Init();
 		}
 
 
@@ -139,8 +145,8 @@ namespace LunaGB.Core {
 			cycles = 0;
 			//Reset other misc flags
 			ime = false;
-			lowPowerMode = false;
-			veryLowPowerMode = false;
+			haltMode = false;
+			stopMode = false;
 			haltBug = false;
 			gbcCpuSpeed = false;
 			errorOccured = false;
@@ -156,8 +162,12 @@ namespace LunaGB.Core {
 			return s;
 		}
 
+		void ChangeCPUSpeed(){
+			gbcCpuSpeed = !gbcCpuSpeed;
+		}
+
 		public void ExecuteInstruction() {
-			if(lowPowerMode){
+			if(haltMode || stopMode){
 				//If the CPU is in low power mode, don't execute instructions
 				cycles += 4; //Increment by 4 cycles???
 				return;
@@ -182,9 +192,49 @@ namespace LunaGB.Core {
 							cycles += 4;
 						}else if(opcode == 0x10){
 							//stop
-							//enter very low power mode, also used to switch between gbc and gb cpu modes
-							//not sure how this behaves
-							veryLowPowerMode = true;
+							//here be dragons
+							bool buttonHeld = false;
+							bool speedSwitchRequested = false;
+							//TODO: for now, assume no button is being held, and no speed switch was requested
+							if(buttonHeld){
+								if(CheckIfInterruptPending() == true){
+									//stop is 1 byte, mode doesn't change, div not reset
+								}else{
+									//stop is 2 bytes, enter halt mode, div not reset
+									pc++;
+									haltMode = true;
+								}
+							}else if(speedSwitchRequested){
+								if(CheckIfInterruptPending() == true){
+									if(ime == true){
+										//stop is 1 byte, mode doesn't change, reset div, change cpu speed
+										memory.ResetDIV();
+										ChangeCPUSpeed();
+									}else{
+										//the CPU enters a non deterministic state, throw an error
+										throw new Exception("Error: invalid stop opcode");
+									}
+								}else{
+									//stop is 2 bytes, enter halt mode, reset div, change cpu speed
+									pc++;
+									haltMode = true;
+									memory.ResetDIV();
+									ChangeCPUSpeed();
+
+									//TODO: halt mode exits after 0x20000 cycles unless an interrupt occurs
+								}
+							}else{
+								if(CheckIfInterruptPending() == true){
+									//stop is 1 byte, enter stop mode, reset div
+									stopMode = true;
+									memory.ResetDIV();
+								}else{
+									//stop is 2 bytes, enter stop mode, reset div
+									pc++;
+									stopMode = true;
+									memory.ResetDIV();
+								}
+							}
 						}else if(opcode == 0x20){
 							//jr nz,n8
 							//relative jump if zero flag not set
@@ -332,7 +382,7 @@ namespace LunaGB.Core {
 
 						flagN = 1;
 						flagZ = result == 0 ? 1 : 0;
-						flagH = (result & 0xF) == 0 ? 1 : 0; //If the lower nibble is FF, a borrow occured from bit 3 to bit 4
+						flagH = (result & 0xF) == 0xF ? 1 : 0; //If the lower nibble is F, a borrow occured from bit 3 to bit 4
 						cycles += 4;
 						break;
 					case 0x06:
@@ -367,20 +417,24 @@ namespace LunaGB.Core {
 							//daa
 							//Adjusts a (sum of two BCD numbers from previous add/sub instruction) to the right BCD
 
-							int n = 0; //amount to adjust a by
-
-							//Add 6 to either digit to correct them if needed
-							if(flagH == 1 || (A & 0xF) > 9) {
-								n = 6;
+							//Add/subtract 6 to either digit to correct them if needed
+							if(flagN == 0){
+								if(flagC == 1 || A > 0x99) {
+									A += 0x60;
+									flagC = 1;
+								}
+								if(flagH == 1 || (A & 0xF) > 9) {
+									A += 6;
+								}
+							}else{
+								if(flagC == 1) {
+									A -= 0x60;
+								}
+								if(flagH == 1) {
+									A -= 6;
+								}
 							}
-							if(flagC == 1 || A > 0x99) {
-								n += 0x60;
-							}
 
-							if(flagN == 1) A = (byte)(A - n);
-							else A = (byte)(A + n);
-
-							flagC = A > 0x99 ? 1 : 0;
 							flagZ = A == 0 ? 1 : 0;
 							flagH = 0;
 
@@ -397,7 +451,7 @@ namespace LunaGB.Core {
 						if(hi == 0x00){ //0x08
 							//ld (n16),sp
 							ushort address = ReadUInt16();
-							memory.WriteByte(address, (byte)(sp & 0xFF)); //set the value at the address to sp & 0xFF
+							memory.WriteUInt16(address, sp); //set the value at the address to sp & 0xFF
 							cycles += 20;
 						}else if(hi == 0x01){ //0x18
 							//jr n8
@@ -432,8 +486,9 @@ namespace LunaGB.Core {
 						}
 						break;
 					case 0x09:
+						//add hl,rr
 						val = hi == 0x00 ? BC : hi == 0x01 ? DE : hi == 0x02 ? HL : sp;
-						flagH = (HL & 0xFFF) + val > 0xFFF ? 1 : 0; //Set if overflow from bit 11
+						flagH = (HL & 0xFFF) + (val & 0xFFF) > 0xFFF ? 1 : 0; //Set if overflow from bit 11
 						flagC = HL + val > 0xFFFF ? 1 : 0;
 						HL += val;
 						flagN = 0;
@@ -515,7 +570,7 @@ namespace LunaGB.Core {
 
 						if (ime)
 						{
-							lowPowerMode = true;
+							haltMode = true;
 						}
 						else
 						{
@@ -529,7 +584,7 @@ namespace LunaGB.Core {
 							}
 							else
 							{
-								lowPowerMode = true;
+								haltMode = true;
 							}
 						}
 
@@ -766,8 +821,8 @@ namespace LunaGB.Core {
 					//sbc a,d8
 					byteVal = ReadByte();
 					carry = flagC;
-					flagH = (A & 0xF) + (byteVal & 0xF) + carry > 0xF ? 1 : 0;
-					flagC = A + byteVal + carry > 0xFF ? 1 : 0;
+					flagH = (A & 0xF) - (byteVal & 0xF) - carry < 0 ? 1 : 0;
+					flagC = A - byteVal - carry < 0 ? 1 : 0;
 					A -= (byte)(byteVal + carry);
 					flagN = 1;
 					flagZ = A == 0 ? 1 : 0;
@@ -817,13 +872,11 @@ namespace LunaGB.Core {
 				case 0xE8:
 					//add sp,r8
 					//Add a signed 8 bit value to SP
-					sbyte val = (sbyte)ReadByte();
-
-					//Not sure if this is right
-					if (val > 0) CheckCarry((byte)sp, (byte)val);
-					else CheckBorrow((byte)sp, (byte)-val);
-
-					sp = (ushort)(sp + val);
+					byte addVal = ReadByte();
+					CheckCarry((byte)sp, addVal);
+					sp = (ushort)(sp + (sbyte)addVal);
+					flagZ = 0;
+					flagN = 0;
 					cycles += 16;
 					break;
 				case 0xE9:
@@ -896,9 +949,11 @@ namespace LunaGB.Core {
 					break;
 				case 0xF8:
 					//ld hl,sp+n8
-					offset = ReadByte();
-					CheckCarry((byte)sp, offset);
-					HL = (ushort)(sp + offset);
+					addVal = ReadByte();
+					CheckCarry((byte)sp, addVal);
+					HL = (ushort)(sp + (sbyte)addVal);
+					flagZ = 0;
+					flagN = 0;
 					cycles += 8;
 					break;
 				case 0xF9:
@@ -966,7 +1021,7 @@ namespace LunaGB.Core {
 						SetRegister(regIndex, RR(val));
 						cycles += regIndex == 6 ? 16 : 8;
 					}
-				}else if(opcode < 0x20){
+				}else if(opcode < 0x30){
 					if(lo < 0x08){ //CB20-CB27
 						//sla
 						SetRegister(regIndex, SLA(val));
@@ -1057,7 +1112,7 @@ namespace LunaGB.Core {
 
 		void Or(int regIndex) {
 			byte val = GetRegisterVal(regIndex);
-			A ^= val;
+			A |= val;
 			flagZ = A == 0 ? 1 : 0;
 			flagC = 0;
 			flagH = 0;
@@ -1072,6 +1127,7 @@ namespace LunaGB.Core {
 			flagC = A + val + carry > 0xFF ? 1 : 0;
 			A += (byte)(val + carry);
 			flagZ = A == 0 ? 1 : 0;
+			flagN = 0;
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
@@ -1079,9 +1135,10 @@ namespace LunaGB.Core {
 			byte val = GetRegisterVal(regIndex);
 			int carry = flagC;
 			flagH = (A & 0xF) - (val & 0xF) - carry < 0 ? 1 : 0;
-			flagC = A + val + carry < 0 ? 1 : 0;
+			flagC = A - val - carry < 0 ? 1 : 0;
 			A -= (byte)(val + carry);
 			flagZ = A == 0 ? 1 : 0;
+			flagN = 1;
 			cycles += regIndex == 6 ? 8 : 4;
 		}
 
@@ -1100,9 +1157,9 @@ namespace LunaGB.Core {
 			result = (byte)(((val << 1) & 0xFF) + (val >> 7));
 			//set carry flag
 			flagC = carryBit;
-			//reset H/Z/N flags
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1115,9 +1172,9 @@ namespace LunaGB.Core {
 			result = (byte)((val >> 1) + (val << 7) & 0xFF);
 			//set carry
 			flagC = carryBit;
-			//reset H/Z/N flags
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1132,9 +1189,9 @@ namespace LunaGB.Core {
 			result = (byte)(((val << 1) & 0xFF) + carryBit);
 			//set carry flag
 			flagC = newCarryBit;
-			//reset H/Z/N flags
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1149,9 +1206,9 @@ namespace LunaGB.Core {
 			result = (byte)((val >> 1) + (carryBit << 7));
 			//set carry flag
 			flagC = newCarryBit;
-			//reset H/Z/N flags
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1161,12 +1218,12 @@ namespace LunaGB.Core {
 
 		byte SLA(byte val){
 			byte result = 0;
-			//set carry flag
-			flagC = val << 1 > 0xFF ? 1 : 0;
+			//shift the top bit into the carry flag
+			flagC = val >> 7;
 			result = (byte)(val << 1);
-			//reset H/Z/N flags
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1174,11 +1231,13 @@ namespace LunaGB.Core {
 
 		byte SRA(byte val){
 			byte result = 0;
-			result = (byte)(val >> 1);
-			//reset H/Z/N/C flags
-			flagC = 0;
+			//shift the bottom bit into the carry flag
+			flagC = val & 1;
+			//bit 7 remains unchanged
+			result = (byte)((val >> 1) | (val & 0x80));
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1186,13 +1245,12 @@ namespace LunaGB.Core {
 
 		byte SRL(byte val){
 			byte result = 0;
-			int newCarryBit = val & 1;
+			//shift the bottom bit into the carry flag
+			flagC = val & 1;
 			result = (byte)(val >> 1);
-			//set carry flag
-			flagC = newCarryBit;
-			//reset H/Z/N flags
+			//reset H/N flags
 			flagN = 0;
-			flagZ = 0;
+			flagZ = result == 0 ? 1 : 0;
 			flagH = 0;
 
 			return result;
@@ -1343,6 +1401,7 @@ namespace LunaGB.Core {
 
 		//Calls a reset vector.
 		void RST(byte vector) {
+			Push(pc);
 			pc = vector;
 			cycles += 16;
 		}
@@ -1359,24 +1418,26 @@ namespace LunaGB.Core {
 		//Handles any interrupts that are requested, if any.
 		//TODO: This might need to be able to service multiple interrupts
 		public void HandleInterrupts(){
-			if(CheckIfInterruptPending()){
-				byte interruptFlag = memory.GetIOReg(IORegister.IF);
+			//Only check for interrupts if ime is set
+			if(ime && CheckIfInterruptPending()){
+				byte IF = memory.GetIOReg(IORegister.IF);
 
 				//Call the corresponding hander
-				if((interruptFlag & 1) == 1){
+				if((IF & 1) == 1 && (IE & 1) == 1){
 					//VBlank
 					CallInterruptHandler(Interrupt.VBlank);
-				}else if(((interruptFlag >> 1) & 1) == 1){
+				}else if(((IF >> 1) & 1) == 1 && ((IE >> 1) & 1) == 1){
 					//LCD
 					CallInterruptHandler(Interrupt.LCD);
-				}else if(((interruptFlag >> 2) & 1) == 1){
+				}else if(((IF >> 2) & 1) == 1 && ((IE >> 2) & 1) == 1){
 					//Timer
 					CallInterruptHandler(Interrupt.Timer);
-				}else if(((interruptFlag >> 3) & 1) == 1){
+				}else if(((IF >> 3) & 1) == 1 && ((IE >> 3) & 1) == 1){
 					//Serial
 					CallInterruptHandler(Interrupt.Serial);
-				}else if(((interruptFlag >> 4) & 1) == 1){
+				}else if(((IF >> 4) & 1) == 1 && ((IE >> 4) & 1) == 1){
 					//Joypad
+					Console.WriteLine("Run joypad interrupt");
 					CallInterruptHandler(Interrupt.Joypad);
 				}
 			}
@@ -1388,45 +1449,42 @@ namespace LunaGB.Core {
 		2)The current PC is pushed to the stack, consuming another 8 cycles.
 		3)The PC is set to the corresponding interrupt handler address, consuming 4 cycles. */
 		void CallInterruptHandler(Interrupt interrupt){
-			//Only call the interrupt if ime is set
-			if(ime){
-				ushort address = 0;
+			ushort address = 0;
 
-				//Reset the corresponding bit in the IF register
-				memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, (int)interrupt, 0);
-				//Reset the IME flag
-				ime = false;
-				//Exit low power mode
-				if(lowPowerMode) lowPowerMode = false;
+			//Reset the corresponding bit in the IF register
+			memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, (int)interrupt, 0);
+			//Reset the IME flag
+			ime = false;
+			//Exit low power mode
+			if(haltMode) haltMode = false;
 
-				//Get the corresponding interrupt handler's address
-				switch(interrupt){
-					case Interrupt.VBlank:
-					address = 0x40;
-					break;
-					case Interrupt.LCD:
-					address = 0x48;
-					break;
-					case Interrupt.Timer:
-					address = 0x50;
-					break;
-					case Interrupt.Serial:
-					address = 0x58;
-					break;
-					case Interrupt.Joypad:
-					address = 0x60;
-					break;
-				}
-
-				//Step 1: Do nothing for 8 cycles (might be executing 2 nop instructions)
-				cycles += 8;
-				//Step 2: Push the current PC to the stack (8 cycles)
-				Push(pc);
-				cycles += 8;
-				//Step 3: Update the PC to the address of the corresponding interrupt handler (4 cycles)
-				pc = address;
-				cycles += 4;
+			//Get the corresponding interrupt handler's address
+			switch(interrupt){
+				case Interrupt.VBlank:
+				address = 0x40;
+				break;
+				case Interrupt.LCD:
+				address = 0x48;
+				break;
+				case Interrupt.Timer:
+				address = 0x50;
+				break;
+				case Interrupt.Serial:
+				address = 0x58;
+				break;
+				case Interrupt.Joypad:
+				address = 0x60;
+				break;
 			}
+
+			//Step 1: Do nothing for 8 cycles (might be executing 2 nop instructions)
+			cycles += 8;
+			//Step 2: Push the current PC to the stack (8 cycles)
+			Push(pc);
+			cycles += 8;
+			//Step 3: Update the PC to the address of the corresponding interrupt handler (4 cycles)
+			pc = address;
+			cycles += 4;
 		}
 
 		//Checks whether an interrupt is pending (IE & IF != 0)

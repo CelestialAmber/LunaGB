@@ -22,8 +22,8 @@ namespace LunaGB.Core.Debug
 		public void InitBreakpoints()
 		{
 			breakpoints.Clear();
-			//breakpoints.Add(new Breakpoint(0x100, 0x200, false, false, true));
-			//breakpoints[0].enabled = true;
+			breakpoints.Add(new Breakpoint(0x210, false, false, true));
+			breakpoints[0].enabled = true;
 		}
 
 		//Checks whether one of the breakpoints was hit when the emulator reads a byte

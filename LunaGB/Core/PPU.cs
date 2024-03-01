@@ -81,7 +81,7 @@ namespace LunaGB.Core
 			}
 			
 			//If 456 or more cycles have passed, go to the next scanline
-			if(scanlineCycleCount > cyclesPerScanline){
+			if(scanlineCycleCount >= cyclesPerScanline){
 				scanlineCycleCount %= cyclesPerScanline;
 				
 				ly++;
@@ -144,10 +144,6 @@ namespace LunaGB.Core
 			}
 		}
 
-
-		byte[] bgTilemap = new byte[0x400];
-		byte[] tileData = new byte[0x1000];
-
 		Color[] palette = {new Color(255,255,255), new Color(170,170,170), new Color(85,85,85), new Color(0,0,0)};
 
 		//Renders the entire background at once. This assumes the scroll position is (0,0).
@@ -156,18 +152,8 @@ namespace LunaGB.Core
 			byte lcdc = memory.GetIOReg(IORegister.LCDC);
 			int bgTileMapArea = (lcdc >> 3) & 1;
 			int bgTileDataArea = (lcdc >> 4) & 1;
-			int tileDataStartAddress = bgTileDataArea == 1 ? 0x8000 : 0x8800;
-
-			//Store the tilemap/tile data in temp arrays
-			for(int i = 0; i < 0x800; i++){
-				tileData[i] = memory.GetByte(tileDataStartAddress + i);
-			}
-
+			int tileDataStartAddress = bgTileDataArea == 1 ? 0x8000 : 0x9000;
 			int tilemapStartAddress = bgTileMapArea == 0 ? 0x9800 : 0x9C00;
-
-			for(int i = 0; i < 0x400; i++){
-				bgTilemap[i] = memory.GetByte(tilemapStartAddress + i);
-			}
 
 			int scrollX = memory.GetIOReg(IORegister.SCX);
 			int scrollY = memory.GetIOReg(IORegister.SCY);
@@ -177,19 +163,19 @@ namespace LunaGB.Core
 					int tileX = x;
 					int tileY = y;
 					int tilemapByteIndex = tileY*32 + tileX;
-					byte tileIndex = bgTilemap[tilemapByteIndex];
-					DrawEntireTile(x, y, tileIndex);
+					int tileIndex = memory.GetByte(tilemapStartAddress + tilemapByteIndex);
+					//If the tile data area is 0, the tile index is a signed byte (-128,127)
+					if(bgTileDataArea == 0) tileIndex = (sbyte)tileIndex;
+					DrawEntireTile(x, y, tileDataStartAddress + tileIndex*16);
 				}
 			}
 		}
 
 		//Draws an entire tile at once.
-		void DrawEntireTile(int xPos, int yPos, int tileIndex){
-			int tileDataOffset = tileIndex*16;
-
+		void DrawEntireTile(int xPos, int yPos, int tileAddress){
 			for(int y = 0; y < 8; y++){
-				byte loByte = tileData[tileDataOffset + y*2];
-				byte hiByte = tileData[tileDataOffset + y*2 + 1];
+				byte loByte = memory.GetByte(tileAddress + y*2);
+				byte hiByte = memory.GetByte(tileAddress + y*2 + 1);
 				for(int x = 0; x < 8; x++){
 					int lo = (loByte >> (7-x)) & 1;
 					int hi = (hiByte >> (7-x)) & 1;
