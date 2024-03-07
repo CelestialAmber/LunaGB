@@ -36,7 +36,6 @@ namespace LunaGB.Core
 		byte prevJOYP;
 		Logger logger;
 
-
 		public Emulator(Debugger debugger)
 		{
 			rom = new ROM();
@@ -103,21 +102,14 @@ namespace LunaGB.Core
 		{
 			lock(emuStepLock){
 				if (debug || debugger.stepping) {
-					if(debugger.stepping) RenderFrame();
 					PrintDebugInfo();
 				}
 
 				int prevCycles = cpu.cycles;
 
-				//TODO: handle inputs and exiting stop mode
-				/*
-				STOP is terminated by one of the P10 to P13 lines going low.
-				For this reason, d-pad and/or button inputs should be enabled by writing
-				$00, $10 or $20 to the P1 register before entering STOP (depending on which
-				buttons you want to terminate the STOP on).
-				*/
-
-				//cpu.stopMode = false;
+				//Check the JOYP register to see if any buttons were pressed. If so,
+				//request a joypad interrupt, and exit stop mode if enabled.
+				CheckJOYP();
 
 				//Handle interrupts
 				cpu.HandleInterrupts();
@@ -131,26 +123,30 @@ namespace LunaGB.Core
 					Console.WriteLine(cpu.GetCPUStateInfo());
 					return;
 				}
-
-				//Check the JOYP register to see if any buttons were pressed. If so,
-				//request a joypad interrupt.
-				CheckJOYP();
 				
 				int cyclesTaken = cpu.cycles - prevCycles;
 				frameCycleCount += cyclesTaken;
 				divCycleTimer += cyclesTaken;
 				timaCycleTimer += cyclesTaken;
 
+				//Handle OAM DMA transfer stuff
+				memory.HandleOAMDMATransfer(cyclesTaken);
+
 				//Update DIV and TIMA registers
 				UpdateDIVAndTIMA();
 
-				ppu.Step(cyclesTaken);
+				//Check if the LCD is enabled
+				if(ppu.lcdcEnable == 1){
+					//If so, step the PPU by the number of cycles the last instruction took
+					ppu.Step(cyclesTaken);
+				}
 
+				//Check if we've reached the end of the frame in cycles
 				if(frameCycleCount >= cyclesPerFrame){
-					//If we're at the end of a frame, render the screen
+					//Render the screen, and pause the thread for approx 16ms (todo: find a better way)
 					RenderFrame();
 					frameCycleCount %= cyclesPerFrame;
-					Thread.Sleep(16);
+					Thread.Sleep(8);
 				}
 
 				if (cpu.cycles >= maxCycles){
@@ -187,7 +183,8 @@ namespace LunaGB.Core
 					//If tima overflows, set it to tma, and request a timer interrupt
 					if(tima == 0){
 						tima = tma;
-						//memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, 2, 1);
+						//TODO: For some reason, enabling this breaks Dr. Mario. Why?
+						//memory.SetHRAMBit((int)IORegister.IF, 2, 1);
 					}
 				}
 				memory.hram[(int)IORegister.TIMA] = tima;
@@ -195,8 +192,11 @@ namespace LunaGB.Core
 		}
 
 		void RenderFrame(){
-			//Render the background for testing
-			ppu.DrawEntireBackground();
+			//If the LCD is disabled, clear the screen
+			if(ppu.lcdcEnable == 0){
+				//Otherwise, keep the screen all white
+				ClearScreen();
+			}
 			OnFinishRendering?.Invoke();
 		}
 
@@ -213,7 +213,11 @@ namespace LunaGB.Core
 			for(int i = 0; i < 4; i++){
 				if(((prevJOYP >> i) & 1) == 1 && ((JOYP >> i) & 1) == 0){
 					//If so, request a joypad interrupt
-					memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, 4, 1);
+					memory.SetHRAMBit((int)IORegister.IF, 4, 1);
+					//If stop mode is active, disable it
+					if(cpu.stopMode == true){
+						cpu.stopMode = false;
+					}
 					break;
 				}
 			}
@@ -233,7 +237,6 @@ namespace LunaGB.Core
 		}
 
 		public void ClearScreen(){
-
 			for(int x = 0; x < 160; x++){
 				for(int y = 0; y < 144; y++){
 					ppu.display.SetPixel(x,y,Color.white);

@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 25.0.1700.3
@@ -6,6 +6,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LunaGB", "LunaGB\LunaGB.csproj", "{BCC03580-55AA-4B14-BB8F-D5DCC75EA5F7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LunaGB.Avalonia", "LunaGB.Avalonia\LunaGB.Avalonia.csproj", "{7CEE0F52-54C1-4162-95AF-CC0431756EF9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LunaGB.Tests", "LunaGB.Tests\LunaGB.Tests.csproj", "{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +26,12 @@ Global
 		{7CEE0F52-54C1-4162-95AF-CC0431756EF9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7CEE0F52-54C1-4162-95AF-CC0431756EF9}.NuGetRelease|Any CPU.ActiveCfg = Debug|Any CPU
 		{7CEE0F52-54C1-4162-95AF-CC0431756EF9}.NuGetRelease|Any CPU.Build.0 = Debug|Any CPU
+		{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}.NuGetRelease|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5AD2097-AC05-4F83-B5BB-330BFF5A90C9}.NuGetRelease|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -11,8 +11,6 @@
     <None Remove="Modern.Forms" />
     <None Remove="MainForm.Designer" />
     <None Remove="Core\" />
-    <None Remove="MonoGame.Framework.DesktopGL" />
-    <None Remove="MonoGame.Forms.DX" />
     <None Remove="Core\ROMMappers\" />
     <None Remove="Avalonia" />
     <None Remove="Avalonia.Desktop" />
@@ -30,7 +28,6 @@
     <Folder Include="Utils/" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.JSON" Version="13.0.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.2" />
   </ItemGroup>
 </Project>

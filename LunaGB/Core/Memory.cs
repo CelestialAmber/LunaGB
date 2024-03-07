@@ -35,8 +35,9 @@ namespace LunaGB.Core
 		public event MemoryReadWriteEvent OnMemoryWrite;
 
 		public bool writeErrorOccured = false;
-		bool cpuTestMode = false;
-		byte[] cpuTestModeRam = new byte[0x10000];
+		public bool canAccessOAM = false;
+		public bool canAccessVRAM = false;
+		public bool doingDMATransfer = false;
 
 
 		public Memory(ROM rom, Debugger debugger)
@@ -54,7 +55,6 @@ namespace LunaGB.Core
 			OnMemoryRead += debugger.OnMemoryRead;
 			OnMemoryWrite += debugger.OnMemoryWrite;
 			debugger.breakpointsEnabled = false;
-			cpuTestMode = true;
 		}
 
 		public void Init(){
@@ -74,27 +74,17 @@ namespace LunaGB.Core
 
 			//Init the JOYP register (00111111)
 			hram[(int)IORegister.P1] = 0b00111111;
-
-			if(cpuTestMode){
-				for(int i = 0; i < 0x10000; i++){
-					cpuTestModeRam[i] = 0;
-				}
-			}
+			//Init the LCDC register
+			SetHRAMBit((int)IORegister.LCDC, 7, 1);
 
 			writeErrorOccured = false;
-		}
-
-		//Used by CPU test to write values to memory for initialization
-		public void WriteByteCPUTest(int address, byte b){
-			cpuTestModeRam[address] = b;
+			canAccessOAM = true;
+			canAccessVRAM = true;
+			doingDMATransfer = false;
 		}
 
 		//Gets the byte located at the given address.
 		public byte GetByte(int address) {
-			if(cpuTestMode){
-				return cpuTestModeRam[address % 0x10000];
-			}
-
 			//If breakpoints are enabled, invoke the event to check if any of the breakpoints were hit.
 			if (debugger.breakpointsEnabled && !debugger.stepping)
 			{
@@ -116,10 +106,15 @@ namespace LunaGB.Core
 			}else if(address < 0xA000){
 				//VRAM
 				//8000-9FFF
-				return vram[address - 0x8000];
+				if(canAccessVRAM){
+					return vram[address - 0x8000];
+				}else{
+					return 0xFF; //if vram can't be accessed right now (ppu is in drawing mode), return 0xFF?
+				}
 			}else if(address < 0xC000){
 				//Cartridge RAM Bank
 				//A000-BFFF
+				return rom.romMapper.GetByte(address);
 				//Console.WriteLine("Tried to read from cartridge ram which isn't implemented yet");
 			}else if(address < 0xD000){
 				//wram bank slot 0 (wram bank 0)
@@ -128,7 +123,6 @@ namespace LunaGB.Core
 			}else if(address < 0xE000){
 				//wram bank slot 1 (switchable)
 				//D000-DFFF
-
 				//TODO: actually handle wram banking
 				return wram[address - 0xD000];
 			}else if(address < 0xF000){
@@ -142,7 +136,11 @@ namespace LunaGB.Core
 			}else if(address < 0xFEA0){
 				//OAM
 				//FE00-FE9F
-				return oam[address - 0xFE00];
+				if(canAccessOAM && !doingDMATransfer){
+					return oam[address - 0xFE00];
+				}else{
+					return 0xFF; //If OAM can't be accessed right now (during OAM DMA/PPU modes 2/3), return 0xFF?
+				}
 			}else if(address < 0xFF00){
 				//unusable space
 				//FEA0-FEFF
@@ -170,11 +168,6 @@ namespace LunaGB.Core
 		}
 
 		public void WriteByte(int address, byte b) {
-			if(cpuTestMode){
-				cpuTestModeRam[address % 0x10000] = b;
-				return;
-			}
-
 			try{
 			//If breakpoints are enabled, invoke the event to check if any of the breakpoints were hit.
 			if (debugger.breakpointsEnabled && !debugger.stepping)
@@ -197,8 +190,10 @@ namespace LunaGB.Core
 			}else if(address < 0xA000){
 				//VRAM
 				//8000-9FFF
-				//TODO: don't allow vram to be written when it shouldn't be
-				vram[address - 0x8000] = b;
+				//Only allow vram to be written to if it's accessible right now (ppu not in drawing mode)
+				if(canAccessVRAM){
+					vram[address - 0x8000] = b;
+				}
 			}else if(address < 0xC000){
 				//Cartridge RAM Bank
 				//A000-BFFF
@@ -224,8 +219,10 @@ namespace LunaGB.Core
 			}else if(address < 0xFEA0){
 				//OAM
 				//FE00-FE9F
-				//Can't be written to during OAM DMA?
-				oam[address - 0xFE00] = b;
+				//Only allow OAM to be written to if it's accessible (vblank/hblank, not in middle of oam dma)
+				if(canAccessOAM && !doingDMATransfer){
+					oam[address - 0xFE00] = b;
+				}
 			}else if(address < 0xFF00){
 				//unusable space
 				//FEA0-FEFF
@@ -265,16 +262,49 @@ namespace LunaGB.Core
 
 		public void SetIOReg(IORegister reg, byte val) {
 			int index = (int)reg;
-			//If the CPU tries to write to the DIV register, reset it
-			if(reg == IORegister.DIV){
-				ResetDIV();
-			}else if(reg == IORegister.P1){
+
+			switch(reg){
+				case IORegister.P1:
 				//Only bits 4/5 are read/writeable
-				SetHRAMBit(0xFF00,4,(val >> 4) & 1);
-				SetHRAMBit(0xFF00,5,(val >> 5) & 1);
+				SetHRAMBit((int)IORegister.P1,4,(val >> 4) & 1);
+				SetHRAMBit((int)IORegister.P1,5,(val >> 5) & 1);
 				Input.UpdateJOYP();
-			}else{
+				break;
+				case IORegister.DIV:
+				//If the CPU tries to write to the DIV register, reset it
+				ResetDIV();
+				break;
+				case IORegister.DMA:
+				//If the DMA register is written to, notify the emulator to perform an OAM DMA transfer
+				doingDMATransfer = true;
+				dmaTransferIndex = 0;
+				//TODO: handle case where upper byte > 0xDF
+				dmaTransferSourceAddress = val << 8;
+				break;
+				default:
 				hram[index] = val;
+				break;
+			}
+		}
+
+		int dmaTransferIndex = 0;
+		int dmaTransferSourceAddress;
+
+		public void HandleOAMDMATransfer(int cycles){
+			//If we're in the middle of a DMA transfer, check how many bytes need to be transferred
+			//For now, we have to account for the emulation loop taking more than 1 cycle, but
+			//eventually this can be changed to simply transfering data byte by byte.
+			if(doingDMATransfer){
+				int endIndex = dmaTransferIndex + cycles;
+				//If 160+ cycles have passed, the transfer will be finished after this loop.
+				if(endIndex >= 160){
+					doingDMATransfer = false;
+					endIndex = 160;
+				}
+				for(int i = dmaTransferIndex; i < endIndex; i++){
+					oam[i] = GetByte(dmaTransferSourceAddress + i);
+				}
+				dmaTransferIndex = endIndex;
 			}
 		}
 
@@ -282,13 +312,13 @@ namespace LunaGB.Core
 			hram[(int)IORegister.DIV] = 0;
 		}
 
-		public byte GetHRAMBit(int bit, int address) {
-			return (byte)((hram[address - 0xFF00] >> bit) & 1);
+		public byte GetHRAMBit(int bit, int index) {
+			return (byte)((hram[index] >> bit) & 1);
 		}
 
-		public void	SetHRAMBit(int address, int bit, int val) {
-			byte b = hram[address - 0xFF00];
-			hram[address - 0xFF00] = (byte)((b & ~(1 << bit)) | (val << bit));
+		public void	SetHRAMBit(int index, int bit, int val) {
+			byte b = hram[index];
+			hram[index] = (byte)((b & ~(1 << bit)) | (val << bit));
 		}
 
 		public void WriteUInt16(int address, ushort val) {

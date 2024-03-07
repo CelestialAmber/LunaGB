@@ -22,9 +22,9 @@ namespace LunaGB.Core
 
 		public static void UpdateJOYP(){
 			//If the select dpad bit is 0, set dpad buttons 
-			if(memory.GetHRAMBit(4,0xFF00) == 0){
+			if(memory.GetHRAMBit(4,(int)IORegister.P1) == 0){
 				memory.hram[(int)IORegister.P1] |= (byte)(flags[0] | (flags[1] << 1) | (flags[2] << 2) | (flags[3] << 3));
-			}else if(memory.GetHRAMBit(5,0xFF00) == 0){
+			}else if(memory.GetHRAMBit(5,(int)IORegister.P1) == 0){
 				//If the select buttons bit is 0, set select buttons
 				memory.hram[(int)IORegister.P1] |= (byte)(flags[4] | (flags[5] << 1) | (flags[6] << 2) | (flags[7] << 3));
 			}else{

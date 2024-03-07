@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using LunaGB.Core.Debug;
 
 namespace LunaGB.Core {
@@ -193,9 +194,9 @@ namespace LunaGB.Core {
 						}else if(opcode == 0x10){
 							//stop
 							//here be dragons
-							bool buttonHeld = false;
+							bool buttonHeld = Input.flags.Contains(0); //Check the button state array to check for if any buttons are being held
 							bool speedSwitchRequested = false;
-							//TODO: for now, assume no button is being held, and no speed switch was requested
+							//TODO: for now, no speed switch was requested
 							if(buttonHeld){
 								if(CheckIfInterruptPending() == true){
 									//stop is 1 byte, mode doesn't change, div not reset
@@ -407,11 +408,11 @@ namespace LunaGB.Core {
 					case 0x07:
 						if(hi == 0x00){ //0x07
 							//rlca
-							A = RLC(A);
+							RLCA();
 							cycles += 4;
 						}else if(hi == 0x01){ //0x17
 							//rla
-							A = RL(A);
+							RLA();
 							cycles += 4;
 						}else if(hi == 0x02){ //0x27
 							//daa
@@ -521,11 +522,11 @@ namespace LunaGB.Core {
 					case 0x0F:
 						if(hi == 0x00){ //0x0F
 							//rrca
-							A = RRC(A);
+							RRCA();
 							cycles += 4;
 						}else if(hi == 0x01){ //0x1F
 							//rra
-							A = RR(A);
+							RRA();
 							cycles += 4;
 						}else if(hi == 0x02){ //0x2F
 							//cpl
@@ -1165,6 +1166,19 @@ namespace LunaGB.Core {
 			return result;
 		}
 
+		//same as standard rlc, but z is set to 0
+		void RLCA(){
+			int carryBit = A >> 7;
+			//rotate a left
+			A = (byte)(((A << 1) & 0xFF) + carryBit);
+			//set carry flag
+			flagC = carryBit;
+			//reset H/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+		}
+
 		byte RRC(byte val){
 			byte result = 0;
 			int carryBit = val & 1;
@@ -1178,6 +1192,19 @@ namespace LunaGB.Core {
 			flagH = 0;
 
 			return result;
+		}
+
+		//same as standard rrc, but z is set to 0
+		void RRCA(){
+			int carryBit = A & 1;
+			//rotate a right
+			A = (byte)((A >> 1) + (A << 7) & 0xFF);
+			//set carry
+			flagC = carryBit;
+			//reset H/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
 		}
 
 		byte RL(byte val){
@@ -1197,6 +1224,21 @@ namespace LunaGB.Core {
 			return result;
 		}
 
+		//Same as standard rl, except z is reset
+		void RLA(){
+			//rotate a left, including the carry flag
+			//C  1 2 3 4 5 6 7 8 -> 1  2 3 4 5 6 7 8 C
+			int carryBit = flagC;
+			int newCarryBit = A >> 7;
+			A = (byte)(((A << 1) & 0xFF) + carryBit);
+			//set carry flag
+			flagC = newCarryBit;
+			//reset H/Z/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
+		}
+
 		byte RR(byte val){
 			byte result = 0;
 			//rotate a right, including the carry flag
@@ -1212,6 +1254,21 @@ namespace LunaGB.Core {
 			flagH = 0;
 
 			return result;
+		}
+
+		//Same as standard rr, except z is set to 0
+		void RRA(){
+			//rotate a right, including the carry flag
+			//C  1 2 3 4 5 6 7 8 -> 8  C 1 2 3 4 5 6 7
+			int carryBit = flagC;
+			int newCarryBit = A & 1;
+			A = (byte)((A >> 1) + (carryBit << 7));
+			//set carry flag
+			flagC = newCarryBit;
+			//reset H/N flags
+			flagN = 0;
+			flagZ = 0;
+			flagH = 0;
 		}
 
 		//Shift functions
@@ -1452,7 +1509,7 @@ namespace LunaGB.Core {
 			ushort address = 0;
 
 			//Reset the corresponding bit in the IF register
-			memory.SetHRAMBit(0xFF00 + (int)IORegister.IF, (int)interrupt, 0);
+			memory.SetHRAMBit((int)IORegister.IF, (int)interrupt, 0);
 			//Reset the IME flag
 			ime = false;
 			//Exit low power mode

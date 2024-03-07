@@ -135,9 +135,32 @@ namespace LunaGB.Core
 			ReadHeader();
 			//PrintHeaderInfo();
 			DetermineROMMapper();
+
 			if(!mapperSupported) return; //If the ROM uses an unsupported mapper, return
+			
+			//Setup rom
 			romMapper.rom = rom;
+			romMapper.romBanks = rom.Length/0x4000; //Calculate the number of rom banks for later
 			romMapper.currentBank = 1; //The default bank in bank slot 1 is bank 1
+			
+			//Setup ram if the cartridge has any
+			if(header.ramSize != 0){
+				//Determine how much ram in kilobytes the cartridge has
+				int headerRamSizeVal = header.ramSize;
+				int ramSizeKb = 0;
+
+				if(headerRamSizeVal == 1) ramSizeKb = 2;
+				else if(headerRamSizeVal == 2) ramSizeKb = 8;
+				else if(headerRamSizeVal == 3) ramSizeKb = 32;
+				else if(headerRamSizeVal == 4) ramSizeKb = 128;
+				else if(headerRamSizeVal == 5) ramSizeKb = 64;
+
+				int ramBanks = ramSizeKb == 2 ? 1 : ramSizeKb/8;
+				romMapper.ramBanks = ramBanks;
+				if(ramSizeKb == 2) romMapper.has2KBRam = true;
+				romMapper.ram = new byte[ramSizeKb*1024];
+			}
+
 			loadedRom = true;
 		}
 
@@ -145,15 +168,22 @@ namespace LunaGB.Core
 		public void DetermineROMMapper() {
 			mapperSupported = true;
 			mapper = (ROMMapper)header.cartridgeType;
-			switch (mapper) {
+			switch(mapper){
 				case ROMMapper.Basic:
 					//Basic rom (0)
 					romMapper = new BasicCartridge();
 					break;
+				case ROMMapper.MBC1:
+				case ROMMapper.MBC1Ram:
+				case ROMMapper.MBC1RamBattery:
+					//MBC1
+					bool hasRam = mapper == ROMMapper.MBC1Ram || mapper == ROMMapper.MBC1RamBattery;
+					bool hasBattery = mapper == ROMMapper.MBC1RamBattery;
+					romMapper = new MBC1(hasRam, hasBattery);
+					break;
 				default:
-					romMapper = new BasicCartridge();
-					//Console.WriteLine("Error: Only the basic rom mapper (0) is implemented");
-					//mapperSupported = false;
+					Console.WriteLine("Error: unsupported mapper {0}",mapper);
+					mapperSupported = false;
 					break;
 			}
 		}

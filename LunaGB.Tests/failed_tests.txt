@@ -1,0 +1,1280 @@
+Failed test for opcode FB (ei), test name: FB 0000
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0001
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0003
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0004
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0005
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0009
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 000C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0010
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0011
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0013
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0014
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0015
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0016
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0017
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0019
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 001A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 001B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 001D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0023
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0024
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0026
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0028
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0029
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 002B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 002D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0031
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0032
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0036
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0038
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 003B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 003D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 003E
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 003F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0040
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0041
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0042
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0043
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0044
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0045
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0046
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0048
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 004B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 004E
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 004F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0050
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0051
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0052
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0058
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0059
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 005B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 005E
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0062
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0065
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0068
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0069
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 006B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 006F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0070
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0071
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0074
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0075
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0076
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0079
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 007A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 007C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 007F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0080
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0084
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0085
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0086
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0088
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0089
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 008B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0091
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0096
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0097
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0098
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0099
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 009A
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 009B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 009C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 009D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 009E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00A1
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00A3
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00A5
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00A6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00A9
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00AA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00AB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00AC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00AD
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00AE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00AF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00B1
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00B3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00B5
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00B6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00B7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00BA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00BC
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00BD
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00BE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00C2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00C3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00C4
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00C5
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00C6
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00C7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00C8
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00C9
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00CB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00CC
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00CE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00D2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00D6
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00D8
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00DC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00DD
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00DF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00E0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00E2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00E4
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00E5
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00E6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00E8
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00EA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00EB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00ED
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00EE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00EF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00F0
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00F3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00F5
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00F7
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 00FA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00FB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 00FF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0104
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0107
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0108
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0109
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 010A
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 010B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 010C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 010E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0110
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0111
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0112
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0117
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0119
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 011B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 011C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 011F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0123
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0124
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0125
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0127
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0128
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0129
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 012C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0130
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0132
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0133
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0136
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0137
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0139
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 013C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 013D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 013E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 013F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0140
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0142
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0143
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0144
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0145
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0146
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0149
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 014D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0151
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0154
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0155
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0157
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 015B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 015F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0162
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0163
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0164
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0165
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0166
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0167
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0169
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 016D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 016F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0170
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0173
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0177
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0178
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 017B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 017E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0181
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0185
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0186
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0188
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0189
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 018A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 018C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 018E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 018F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0193
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0194
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0195
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0197
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0198
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0199
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 019A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 019F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01A0
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01A2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01A8
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01AA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01AB
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01AD
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01AE
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01AF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01B2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01B5
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01B6
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01B7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01B8
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01B9
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01BA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01BB
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01BD
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01BE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01BF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01C0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01C6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01C7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01C9
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01CA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01CE
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01CF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01D1
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01D3
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01DA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01DE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01DF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01E2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01E3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01E4
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01E6
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01E7
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01E8
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01E9
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01EC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01EF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01F1
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01F2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01F5
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01F6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01FA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01FB
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 01FC
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01FE
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 01FF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0200
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0201
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0204
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0205
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0206
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0207
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0208
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 020A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 020F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0214
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0215
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0216
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0219
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 021C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0220
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0221
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0223
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0224
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0225
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0226
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0229
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 022B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 022C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 022D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 022F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0231
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0235
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0236
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0237
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 023A
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 023C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0240
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0241
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0243
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0244
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0246
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0248
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 024A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 024B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 024D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 024E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 024F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0250
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0251
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0256
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0257
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 025A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 025C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 025D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0261
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0263
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0264
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0267
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0269
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 026A
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 026B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 026D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 026F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0272
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0274
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0275
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0277
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0278
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0279
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 027A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 027B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 027C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 027D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 027E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 027F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0280
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0283
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0285
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 028C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 028E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 028F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0290
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0293
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0294
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0295
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0296
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0298
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 029A
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 029B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 029C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 029E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 029F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02A1
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02A2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02A4
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02A8
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02AB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02AC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02AD
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02AE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02B3
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02B7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02B8
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02B9
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02BA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02BB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02BD
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02BF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02C1
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02C2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02C7
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02CA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02CB
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02CC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02CD
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02CF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02D0
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02D2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02D3
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02D4
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02D6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02D8
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02DA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02DB
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02DC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02E0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02E1
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02E2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02E3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02E6
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02E7
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02EA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02EB
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02EC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02ED
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02EE
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02F1
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02F2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02F4
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02F5
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02FA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02FB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 02FC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 02FD
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0303
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0304
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0309
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 030C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0310
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0311
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0312
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0313
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0315
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0316
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0318
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 031B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 031D
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0320
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0322
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0324
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0328
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0329
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 032B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 032E
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 032F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0331
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0332
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 033D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 033E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 033F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0340
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0343
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0346
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0349
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 034E
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 034F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0351
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0353
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0354
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0355
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0356
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 035A
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 035C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0362
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0364
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0365
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0366
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0367
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0369
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 036B
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 036C
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 036D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 036F
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0371
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0372
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0376
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0377
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0379
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 037D
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0380
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0385
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0388
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0389
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 038B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 038C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 038E
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 038F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0390
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0391
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0393
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 0397
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 0399
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 039A
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 039B
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 039C
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 039E
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 039F
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03A0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03A2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03A7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03AA
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03AC
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03AE
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03AF
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03B0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03B2
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03B3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03B4
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03B5
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03B6
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03B7
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03B8
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03BC
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03BE
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03BF
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03C0
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03C3
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03C5
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03C6
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03C7
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03CA
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03CB
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03CD
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03CE
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03D0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03D1
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03D2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03D3
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03D4
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03D5
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03D7
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03E0
+IME = 1, should be 0 (original value: 0)
+IE = 1, should be 0 (original value: 1)
+Failed test for opcode FB (ei), test name: FB 03E2
+IME = 1, should be 0 (original value: 0)
+Failed test for opcode FB (ei), test name: FB 03E5
+IME = 1, should be 0 (original value: 0)

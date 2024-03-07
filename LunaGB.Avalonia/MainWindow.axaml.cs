@@ -14,7 +14,6 @@ using LunaGB.Core;
 using LunaGB.Graphics;
 using LunaGB.Core.Debug;
 using LunaGB.Avalonia.Views;
-using LunaGB.Tests.SM83Tests;
 
 namespace LunaGB.Avalonia {
 	public partial class MainWindow : Window {
