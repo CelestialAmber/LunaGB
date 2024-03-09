@@ -107,11 +107,11 @@ namespace LunaGB.Core {
 		}
 
 
-		public int cycles; //current number of cycles (not divided by 4 for now)
-		public bool stopMode; //very low power mode flag (stop)
+		public int cycles; //cycles taken by the current instruction
+		public bool stopMode;
 		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
 		public bool ime;
-		public bool haltMode; //halt
+		public bool haltMode;
 		bool haltBug; //is the halt bug active?
 		bool debug = true;
 		public bool errorOccured = false; //has the cpu ran into an error?
@@ -124,13 +124,6 @@ namespace LunaGB.Core {
 			this.memory = memory;
 		}
 
-		//Used for CPU tests
-		public CPU(){
-			memory = new Memory();
-			memory.Init();
-		}
-
-
 		public void Init(){
 			//Set all registers to 0
 			A = 0;
@@ -141,9 +134,8 @@ namespace LunaGB.Core {
 			F = 0;
 			H = 0;
 			L = 0;
-			sp = 0;
+			sp = 0xFFFE;
 			pc = 0x100; //Initialize the PC to 0x100 (entry point)
-			cycles = 0;
 			//Reset other misc flags
 			ime = false;
 			haltMode = false;
@@ -168,6 +160,8 @@ namespace LunaGB.Core {
 		}
 
 		public void ExecuteInstruction() {
+			cycles = 0;
+			
 			if(haltMode || stopMode){
 				//If the CPU is in low power mode, don't execute instructions
 				cycles += 4; //Increment by 4 cycles???
@@ -1479,23 +1473,12 @@ namespace LunaGB.Core {
 			if(ime && CheckIfInterruptPending()){
 				byte IF = memory.GetIOReg(IORegister.IF);
 
-				//Call the corresponding hander
-				if((IF & 1) == 1 && (IE & 1) == 1){
-					//VBlank
-					CallInterruptHandler(Interrupt.VBlank);
-				}else if(((IF >> 1) & 1) == 1 && ((IE >> 1) & 1) == 1){
-					//LCD
-					CallInterruptHandler(Interrupt.LCD);
-				}else if(((IF >> 2) & 1) == 1 && ((IE >> 2) & 1) == 1){
-					//Timer
-					CallInterruptHandler(Interrupt.Timer);
-				}else if(((IF >> 3) & 1) == 1 && ((IE >> 3) & 1) == 1){
-					//Serial
-					CallInterruptHandler(Interrupt.Serial);
-				}else if(((IF >> 4) & 1) == 1 && ((IE >> 4) & 1) == 1){
-					//Joypad
-					Console.WriteLine("Run joypad interrupt");
-					CallInterruptHandler(Interrupt.Joypad);
+				//Call the first interrupt handler that can be called.
+				for(int i = 0; i < 5; i++){
+					if((IF & IE & (1 << i)) != 0){
+						CallInterruptHandler((Interrupt)i);
+						break;
+					}
 				}
 			}
 		}

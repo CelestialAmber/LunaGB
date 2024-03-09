@@ -33,6 +33,8 @@ namespace LunaGB.Core
 		public delegate void MemoryReadWriteEvent(int address);
 		public event MemoryReadWriteEvent OnMemoryRead;
 		public event MemoryReadWriteEvent OnMemoryWrite;
+		public delegate void LCDEnableEvent(bool state);
+		public event LCDEnableEvent OnLCDEnableChange;
 
 		public bool writeErrorOccured = false;
 		public bool canAccessOAM = false;
@@ -46,15 +48,6 @@ namespace LunaGB.Core
 			this.debugger = debugger;
 			OnMemoryRead += debugger.OnMemoryRead;
 			OnMemoryWrite += debugger.OnMemoryWrite;
-		}
-
-		//Used for CPU tests
-		public Memory(){
-			rom = new ROM();
-			debugger = new Debugger();
-			OnMemoryRead += debugger.OnMemoryRead;
-			OnMemoryWrite += debugger.OnMemoryWrite;
-			debugger.breakpointsEnabled = false;
 		}
 
 		public void Init(){
@@ -76,6 +69,8 @@ namespace LunaGB.Core
 			hram[(int)IORegister.P1] = 0b00111111;
 			//Init the LCDC register
 			SetHRAMBit((int)IORegister.LCDC, 7, 1);
+			//Init the SB register (all 1s for now)
+			hram[(int)IORegister.SB] = 0xFF;
 
 			writeErrorOccured = false;
 			canAccessOAM = true;
@@ -256,6 +251,9 @@ namespace LunaGB.Core
 
 		//TODO: check whether the registers can be read/written to
 		public byte GetIOReg(IORegister reg){
+			if(reg == IORegister.P1){
+				Input.UpdateJOYP();
+			}
 			int index = (int)reg;
 			return hram[index];
 		}
@@ -268,7 +266,6 @@ namespace LunaGB.Core
 				//Only bits 4/5 are read/writeable
 				SetHRAMBit((int)IORegister.P1,4,(val >> 4) & 1);
 				SetHRAMBit((int)IORegister.P1,5,(val >> 5) & 1);
-				Input.UpdateJOYP();
 				break;
 				case IORegister.DIV:
 				//If the CPU tries to write to the DIV register, reset it
@@ -281,6 +278,15 @@ namespace LunaGB.Core
 				//TODO: handle case where upper byte > 0xDF
 				dmaTransferSourceAddress = val << 8;
 				break;
+				case IORegister.LCDC:
+				int newLcdEnableValue = (val >> 7) & 1;
+				int curLcdEnableValue = GetHRAMBit(7,(int)IORegister.LCDC);
+				//If the lcd enable flag was changed, notify the emulator
+				if(newLcdEnableValue != curLcdEnableValue){
+					OnLCDEnableChange(newLcdEnableValue == 1 ? true : false);
+				}
+				hram[index] = val;
+				break;
 				default:
 				hram[index] = val;
 				break;
@@ -290,22 +296,11 @@ namespace LunaGB.Core
 		int dmaTransferIndex = 0;
 		int dmaTransferSourceAddress;
 
-		public void HandleOAMDMATransfer(int cycles){
-			//If we're in the middle of a DMA transfer, check how many bytes need to be transferred
-			//For now, we have to account for the emulation loop taking more than 1 cycle, but
-			//eventually this can be changed to simply transfering data byte by byte.
-			if(doingDMATransfer){
-				int endIndex = dmaTransferIndex + cycles;
-				//If 160+ cycles have passed, the transfer will be finished after this loop.
-				if(endIndex >= 160){
-					doingDMATransfer = false;
-					endIndex = 160;
-				}
-				for(int i = dmaTransferIndex; i < endIndex; i++){
-					oam[i] = GetByte(dmaTransferSourceAddress + i);
-				}
-				dmaTransferIndex = endIndex;
-			}
+		//Performs a step for OAM DMA.
+		public void OAMDMAStep(){
+			oam[dmaTransferIndex] = GetByte(dmaTransferSourceAddress + dmaTransferIndex);
+			dmaTransferIndex++;
+			if(dmaTransferIndex == 160) doingDMATransfer = false;
 		}
 
 		public void ResetDIV(){

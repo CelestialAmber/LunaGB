@@ -46,7 +46,7 @@ namespace LunaGB.Avalonia {
 			KeyUp += OnKeyUp;
 			debugger.OnHitBreakpoint += OnHitBreakpoint;
 			cToken = new CancellationTokenSource();
-			emulator.OnFinishRendering += RenderFrame;
+			emulator.display.OnRender += RenderFrame;
 
 			DrawStartupImage();
 		}

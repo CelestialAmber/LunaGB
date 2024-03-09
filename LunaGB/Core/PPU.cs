@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.Common;
+using System.Collections.Generic;
 using LunaGB.Graphics;
 
 namespace LunaGB.Core
@@ -15,14 +16,18 @@ namespace LunaGB.Core
 
 
 		Memory memory;
-		public LunaImage display;
+		Display display;
 
 		public byte ly = 0;
+		int windowLine = 0; //Internal line counter for the window
 		PPUMode mode;
 		public const int cyclesPerScanline = 456; //each scanline takes 456 cycles
 		public int scanlineCycleCount = 0;
 		bool blockStatIrqs = false;
 		byte[,] pixels = new byte[160,144]; //used to store pixels before rendering the final image to the screen
+
+
+		//PPU registers
 
 		byte BGP {
 			get{
@@ -100,25 +105,42 @@ namespace LunaGB.Core
 			}
 		}
 
+		public int WX {
+			get{
+				return memory.GetIOReg(IORegister.WX);
+			}
+		}
+
+		public int WY {
+			get{
+				return memory.GetIOReg(IORegister.WY);
+			}
+		}
+
+
 		//Arrays for storing the GB register color palettes for easier use
 		byte[] bgPalette = new byte[4];
 		byte[] objPalette0 = new byte[4];
 		byte[] objPalette1 = new byte[4];
 
-		public PPU(Memory memory)
+		//used to store the indices of the objects selected to be drawn
+		List<int> scanlineObjIndices = new List<int>();
+
+		public PPU(Memory memory, Display display)
 		{
-			display = new LunaImage(160,144);
+			this.display = display;
 			this.memory = memory;
 			
 		}
 
 		public void Init(){
 			ly = 0;
+			windowLine = 0;
 			scanlineCycleCount = 0;
 			SetMode(PPUMode.OAM);
 			memory.canAccessOAM = false;
 			blockStatIrqs = false;
-			ClearScreen();
+			ClearPixelData();
 		}
 
 		//TODO:
@@ -127,7 +149,7 @@ namespace LunaGB.Core
 		//-Maybe move the PPU to its own thread?
 		//-The different PPU actions should also actually be done during the respective modes instead
 		//of faking it.
-		public void Step(int cpuCyclesPassed)
+		public void Step()
 		{
 			//TODO: properly emulate PPU behavior lol
 			/*
@@ -144,13 +166,14 @@ namespace LunaGB.Core
 			int mode2IntSelect = (stat >> 5) & 1;
 			int lycIntSelect = (stat >> 6) & 1;
 
-			//Increment the current scanline cycle count by how many cycles the last instruction took
-			scanlineCycleCount += cpuCyclesPassed;
+			//Increment the current scanline cycle count
+			scanlineCycleCount++;
 
 			//If we're not in vblank, check whether we should change mode
 			if(mode != PPUMode.VBlank){
 				//If 80 or more cycles have passed and we're in mode 2 (oam), change to mode 3 (drawing)
 				if(scanlineCycleCount >= 80 && mode == PPUMode.OAM){
+					OAMScan(); //Scan OAM to select up to 10 objects to be drawn.
 					SetMode(PPUMode.Drawing);
 				}
 
@@ -179,11 +202,13 @@ namespace LunaGB.Core
 					RequestVBlankInterrupt();
 					//If the mode 1 condition was enabled and we changed to mode 1, request a stat interrupt
 					if(mode1IntSelect == 1) RequestSTATInterrupt();
+					//Update the display
+					UpdateDisplay();
+					windowLine = 0;
 				}else if(ly == 154){
 					//If ly is 154, we're at the end of vblank, reset ly to 0
 					ly = 0;
 					SetMode(PPUMode.OAM);
-					RenderToImage();
 				}
 				memory.SetIOReg(IORegister.LY, ly);
 
@@ -230,6 +255,29 @@ namespace LunaGB.Core
 			*/
 		}
 
+
+		/* TODO: on gb, the indices should be sorted by x position from right to left to correctly
+		emulate priority. */
+		void OAMScan(){
+			int height = objSize == 0 ? 8 : 16;
+
+			scanlineObjIndices.Clear(); //Clear the object list
+
+			//Loop through each OAM entry, and find up to 10 objects which are
+			//on the current scanline, regardless of whether they're on screen or not.
+			for(int i = 0; i < 40; i++){
+				int yPos = memory.oam[i*4] - 16;
+
+				//If the object is on the scanline, add it to the list.
+				if(ly >= yPos && ly < yPos + height){
+					scanlineObjIndices.Add(i);
+				}
+
+				//If we now have chosen 10 objects, return
+				if(scanlineObjIndices.Count == 10) return;
+			}
+		}
+
 		void RequestVBlankInterrupt(){
 			memory.SetHRAMBit((int)IORegister.IF, 0, 1);
 		}
@@ -241,36 +289,18 @@ namespace LunaGB.Core
 			}
 		}
 
-		public void RenderToImage(){
-			//Convert the pixel data to an image to be rendered
-			ConvertPixelDataToImage();
-			//Clear the screen to white
-			ClearScreen();
+		public void UpdateDisplay(){
+			//Update the display with the raw pixel data
+			display.Update(pixels);
+			//Reset the pixels to 0
+			ClearPixelData();
 		}
 
 
-		void ClearScreen(){
+		void ClearPixelData(){
 			for(int x = 0; x < 160; x++){
 				for(int y = 0; y < 144; y++){
 					pixels[x,y] = 0;
-				}
-			}
-		}
-
-		/*
-		The Game Boy maps the color indices to colors like this:
-		0: White
-		1: Light Gray
-		2: Dark Gray
-		3: Black
-		*/
-		Color[] palette = {new Color(255,255,255), new Color(170,170,170), new Color(85,85,85), new Color(0,0,0)};
-
-		void ConvertPixelDataToImage(){
-			for(int x = 0; x < 160; x++){
-				for(int y = 0; y < 144; y++){
-					Color col = palette[pixels[x,y]];
-					display.SetPixel(x,y, col);
 				}
 			}
 		}
@@ -305,7 +335,7 @@ namespace LunaGB.Core
 			}
 			//Draw all objects on this scanline if objects are enabled
 			if(objEnable == 1){
-				DrawObjectsOnScanline();
+				DrawObjects();
 			}
 		}
 
@@ -349,8 +379,8 @@ namespace LunaGB.Core
 			int tilemapArea = windowTilemapArea;
 			int tileDataStartAddress = tileDataArea == 1 ? 0x8000 : 0x9000;
 			int tilemapStartAddress = tilemapArea == 0 ? 0x9800 : 0x9C00;
-			int windowX = memory.GetIOReg(IORegister.WX) - 7;
-			int windowY = memory.GetIOReg(IORegister.WY);
+			int windowX = WX - 7;
+			int windowY = WY;
 
 			//If the window isn't visible, don't render it
 			if(windowX >= 160 || windowY >= 144 || (ly < windowY)) return;
@@ -358,7 +388,7 @@ namespace LunaGB.Core
 			int startX = windowX >= 0 ? windowX : 0;
 
 			for(int x = startX; x < 160; x++){
-				int y = ly;
+				int y = windowLine;
 				int tilemapPixelXPos = x - windowX;
 				int tilemapPixelYPos = y - windowY;
 				int tileX = tilemapPixelXPos/8;
@@ -379,19 +409,22 @@ namespace LunaGB.Core
 				int palIndex = lo + (hi << 1);
 				pixels[x,y] = bgPalette[palIndex];
 			}
+
+			windowLine++;
 		}
 
-		//Loops through each object, and draws all objects that appear on the current scanline.
-		void DrawObjectsOnScanline(){
+		/* Loops through each object selected to be drawn on the current scanline,
+		and draws all visible ones. */
+		void DrawObjects(){
 			byte lcdc = memory.GetIOReg(IORegister.LCDC);
 			int size = objSize;
-			int objectsDrawn = 0; //Keeps track of how many objects were drawn on this scanline so far.
 
-			for(int i = 0; i < 40; i++){
-				int yPos = memory.oam[i*4];
-				int xPos = memory.oam[i*4 + 1];
+			for(int i = 0; i < scanlineObjIndices.Count; i++){
+				int objIndex = scanlineObjIndices[i];
+				int yPos = memory.oam[objIndex*4];
+				int xPos = memory.oam[objIndex*4 + 1];
 
-				int tileIndex = memory.oam[i*4 + 2];
+				int tileIndex = memory.oam[objIndex*4 + 2];
 				/*
 				Flags:
 				bits 0-2: cgb palette (gbc only)
@@ -401,45 +434,36 @@ namespace LunaGB.Core
 				bit 6: y flip
 				bit 7: priority
 				*/
-				byte flags = memory.oam[i*4 + 3];
+				byte flags = memory.oam[objIndex*4 + 3];
 				int palette = (flags >> 4) & 1;
 				bool xFlip = ((flags >> 5) & 1) == 1 ? true : false;
 				bool yFlip = ((flags >> 6) & 1) == 1 ? true : false;
 				int priority = (flags >> 7) & 1;
 				
 				//Only render the object if part of it will show up on screen
-				if(xPos > 0 && xPos < 168 && yPos > 0 && yPos < 160){
+				if(xPos > 0 && xPos < 168){
 					int screenX = xPos - 8;
 					int screenY = yPos - 16;
-					//Next, determine if this object is on the current scanline. If so, determine which line of the object
+					//Next, determine which line of the object
 					//should be rendered.
 					int height = size == 0 ? 8 : 16;
-					bool isOnScanline = (ly >= screenY && ly < screenY + height);
 					int lineToRender = 0;
 
-					if(isOnScanline){
-						//If the object is on the scanline, find out which line needs to be rendered.
-						if(size == 0){
-							lineToRender = ly - screenY;
-							if(yFlip) lineToRender = 7 - lineToRender;
-						}else if(size == 1){
-							//If the sprite mode is 8x16, check whether a line from the top or bottom half should be rendered.
-							lineToRender = ly - screenY;
-							if(yFlip) lineToRender = 15 - lineToRender;
-							//If the bottom half is on the scanline, increment the tile index.
-							if(lineToRender >= 8){
-								tileIndex++;
-								lineToRender %= 8;
-							}
+					if(size == 0){
+						lineToRender = ly - screenY;
+						if(yFlip) lineToRender = 7 - lineToRender;
+					}else if(size == 1){
+						//If the sprite mode is 8x16, check whether a line from the top or bottom half should be rendered.
+						lineToRender = ly - screenY;
+						if(yFlip) lineToRender = 15 - lineToRender;
+						//If the bottom half is on the scanline, increment the tile index.
+						if(lineToRender >= 8){
+							tileIndex = (tileIndex & 0b11111110) + 1;
+							lineToRender %= 8;
 						}
-					}else{
-						continue; //The object isn't on the current scanline, go to the next one
 					}
 
-
 					DrawObjectLine(screenX, lineToRender, xFlip, priority, palette, tileIndex);
-					objectsDrawn++;
-					if(objectsDrawn == 10) break; //Each scanline can only have 10 objects
 				}
 			}
 		}

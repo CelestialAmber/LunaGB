@@ -164,6 +164,10 @@ namespace LunaGB.Core
 			loadedRom = true;
 		}
 
+		public void Init(){
+			romMapper.Init();
+		}
+
 		//Determines which ROM mapper to use based on the cartridge type in the header
 		public void DetermineROMMapper() {
 			mapperSupported = true;

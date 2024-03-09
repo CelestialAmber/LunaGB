@@ -5,11 +5,8 @@ namespace LunaGB.Core.ROMMappers
     //Examples: Tetris, Dr. Mario, Alleyway
     public class BasicCartridge : Cartridge
     {
-        public BasicCartridge()
-        {
-        }
 
-        public override byte GetByte(int index) {
+		public override byte GetByte(int index) {
             //The basic rom mapper doesn't support bank switching, so we can directly use the index
 
 			//If reading from rom, return the corresponding byte in rom

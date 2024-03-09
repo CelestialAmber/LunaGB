@@ -1,6 +1,7 @@
 ﻿using System;
 using LunaGB.Core.Debug;
 using System.Threading;
+using System.Diagnostics;
 using LunaGB.Graphics;
 using LunaGB.Utils;
 
@@ -14,7 +15,8 @@ namespace LunaGB.Core
 		Memory memory;
 		ROM rom;
 		Disassembler disassembler;
-		public Debugger debugger;
+		public Display display;
+		public Debug.Debugger debugger;
 
 		public bool isRunning = false;
 		public bool paused = false;
@@ -22,31 +24,36 @@ namespace LunaGB.Core
 		public bool debug = false;
 		public bool doReset;
 		public bool pausedOnBreakpoint;
-		public delegate void FinishRenderingEvent();
-		public event FinishRenderingEvent OnFinishRendering;
 		CancellationToken ctoken;
 		object emuStepLock = new object();
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
 		public const float frameRate = 59.73f; //frame rate/refresh rate
+		int cycles = 0;
 		int frameCycleCount = 0;
 		int divCycleTimer = 0;
 		int timaCycleTimer = 0;
 		int cyclesPerFrame = 0;
+		double msPerFrame = 0d;
 		byte prevJOYP;
 		Logger logger;
+		Stopwatch sw;
 
-		public Emulator(Debugger debugger)
+		public Emulator(Debug.Debugger debugger)
 		{
 			rom = new ROM();
 			memory = new Memory(rom, debugger);
+			memory.OnLCDEnableChange += LCDEnableChangeCallback;
+			display = new Display();
 			cpu = new CPU(memory);
-			ppu = new PPU(memory);
+			ppu = new PPU(memory, display);
 			disassembler = new Disassembler(memory);
 			this.debugger = debugger;
-			cyclesPerFrame = (int)Math.Floor((float)maxCycles/frameRate);
 			Input.memory = memory;
 			logger = new Logger("log.txt");
+			cyclesPerFrame = (int)Math.Floor((float)maxCycles/59.73f);
+			msPerFrame = 1000d*(1d/frameRate);
+			sw = new Stopwatch();
 		}
 
 		//Loads the specified ROM.
@@ -65,13 +72,18 @@ namespace LunaGB.Core
 			memory.Init();
 			cpu.Init();
 			ppu.Init();
+			rom.Init();
 			ctoken = token;
-			ClearScreen();
+			display.Clear();
+			display.Render();
 			prevJOYP = memory.GetIOReg(IORegister.P1);
 			Run();
 		}
 
 		public void Run() {
+			//Start the stopwatch
+			sw.Start();
+
 			while (isRunning && !ctoken.IsCancellationRequested) {
 				/* If breakpoints are enabled and we're not manually stepping, check whether
 				one of them would be hit by executing the next instruction */
@@ -105,14 +117,9 @@ namespace LunaGB.Core
 					PrintDebugInfo();
 				}
 
-				int prevCycles = cpu.cycles;
-
 				//Check the JOYP register to see if any buttons were pressed. If so,
 				//request a joypad interrupt, and exit stop mode if enabled.
 				CheckJOYP();
-
-				//Handle interrupts
-				cpu.HandleInterrupts();
 
 				cpu.ExecuteInstruction();
 
@@ -124,13 +131,19 @@ namespace LunaGB.Core
 					return;
 				}
 				
-				int cyclesTaken = cpu.cycles - prevCycles;
+				int cyclesTaken = cpu.cycles;
+				cycles += cyclesTaken;
 				frameCycleCount += cyclesTaken;
 				divCycleTimer += cyclesTaken;
 				timaCycleTimer += cyclesTaken;
 
-				//Handle OAM DMA transfer stuff
-				memory.HandleOAMDMATransfer(cyclesTaken);
+				//If we're in the middle of an OAM DMA transfer, transfer 1 byte for each cycle
+				if(memory.doingDMATransfer){
+					for(int i = 0; i < cyclesTaken; i++){
+						memory.OAMDMAStep();
+						if(!memory.doingDMATransfer) break;
+					}
+				}
 
 				//Update DIV and TIMA registers
 				UpdateDIVAndTIMA();
@@ -138,21 +151,38 @@ namespace LunaGB.Core
 				//Check if the LCD is enabled
 				if(ppu.lcdcEnable == 1){
 					//If so, step the PPU by the number of cycles the last instruction took
-					ppu.Step(cyclesTaken);
+					for(int i = 0; i < cyclesTaken; i++){
+						ppu.Step();
+					}
 				}
+
+				//Handle interrupts
+				cpu.HandleInterrupts();
 
 				//Check if we've reached the end of the frame in cycles
 				if(frameCycleCount >= cyclesPerFrame){
 					//Render the screen, and pause the thread for approx 16ms (todo: find a better way)
-					RenderFrame();
+					if(display.enabled) display.Render();
 					frameCycleCount %= cyclesPerFrame;
-					Thread.Sleep(8);
+					while(sw.Elapsed.TotalMilliseconds < msPerFrame){
+						Thread.Sleep(0);
+					}
+					sw.Reset();
+					sw.Start();
 				}
 
-				if (cpu.cycles >= maxCycles){
-					cpu.cycles = 0;
-					frameCycleCount = 0;
+				if (cycles >= maxCycles){
+					cycles %= maxCycles;
+					frameCycleCount = cycles;
 				}
+			}
+		}
+
+		void LCDEnableChangeCallback(bool state){
+			display.enabled = state;
+			if(state == false){
+				display.Clear();
+				display.Render();
 			}
 		}
 
@@ -191,16 +221,6 @@ namespace LunaGB.Core
 			}
 		}
 
-		void RenderFrame(){
-			//If the LCD is disabled, clear the screen
-			if(ppu.lcdcEnable == 0){
-				//Otherwise, keep the screen all white
-				ClearScreen();
-			}
-			OnFinishRendering?.Invoke();
-		}
-
-
 		//Stops the emulator.
 		public void Stop() {
 			isRunning = false;
@@ -236,18 +256,8 @@ namespace LunaGB.Core
 			return memory;
 		}
 
-		public void ClearScreen(){
-			for(int x = 0; x < 160; x++){
-				for(int y = 0; y < 144; y++){
-					ppu.display.SetPixel(x,y,Color.white);
-				}
-			}
-
-			OnFinishRendering?.Invoke();
-		}
-
 		public LunaImage GetScreenBitmap(){
-			return ppu.display;
+			return display.display;
 		}
 
 	}

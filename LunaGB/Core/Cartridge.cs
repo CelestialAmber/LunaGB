@@ -3,8 +3,6 @@ namespace LunaGB.Core {
 
 	//Base class for all cartridge types. Used to handle the different MBC chips used in different ROMs.
 	public abstract class Cartridge {
-
-		public int banks;
 		public byte[] rom;
 		public byte[] ram;
 		public int currentBank; //Current loaded bank (bank 1 on gb)
@@ -17,6 +15,11 @@ namespace LunaGB.Core {
 
 
 		public Cartridge() {
+		}
+
+		public virtual void Init(){
+			currentBank = 0;
+			currentRamBank = 0;
 		}
 
 		public abstract byte GetByte(int index);
