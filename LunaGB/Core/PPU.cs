@@ -143,6 +143,10 @@ namespace LunaGB.Core
 			ClearPixelData();
 		}
 
+		public string GetPPUStateInfo(){
+			return string.Format("LY = {0}",ly);
+		}
+
 		//TODO:
 		//-The cpu should really eventually be rewritten to just be cycle accurate
 		//so the PPU can step cycle by cycle instead.
@@ -165,9 +169,6 @@ namespace LunaGB.Core
 			int mode1IntSelect = (stat >> 4) & 1;
 			int mode2IntSelect = (stat >> 5) & 1;
 			int lycIntSelect = (stat >> 6) & 1;
-
-			//Increment the current scanline cycle count
-			scanlineCycleCount++;
 
 			//If we're not in vblank, check whether we should change mode
 			if(mode != PPUMode.VBlank){
@@ -233,6 +234,9 @@ namespace LunaGB.Core
 			if(!(mode0IntSelect == 1 && mode == PPUMode.HBlank) && !(mode1IntSelect == 1 && mode == PPUMode.VBlank) && !(mode2IntSelect == 1 && mode == PPUMode.OAM) && !(lycIntSelect == 1 && lycFlag == 1)){
 				blockStatIrqs = false;
 			}
+
+			//Increment the current scanline cycle count
+			scanlineCycleCount++;
 		}
 
 		void SetMode(PPUMode newMode){
@@ -388,7 +392,7 @@ namespace LunaGB.Core
 			int startX = windowX >= 0 ? windowX : 0;
 
 			for(int x = startX; x < 160; x++){
-				int y = windowLine;
+				int y = ly; //windowLine;
 				int tilemapPixelXPos = x - windowX;
 				int tilemapPixelYPos = y - windowY;
 				int tileX = tilemapPixelXPos/8;

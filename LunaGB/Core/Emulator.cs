@@ -43,7 +43,6 @@ namespace LunaGB.Core
 		{
 			rom = new ROM();
 			memory = new Memory(rom, debugger);
-			memory.OnLCDEnableChange += LCDEnableChangeCallback;
 			display = new Display();
 			cpu = new CPU(memory);
 			ppu = new PPU(memory, display);
@@ -54,6 +53,10 @@ namespace LunaGB.Core
 			cyclesPerFrame = (int)Math.Floor((float)maxCycles/59.73f);
 			msPerFrame = 1000d*(1d/frameRate);
 			sw = new Stopwatch();
+			//Setup events
+			memory.OnLCDEnableChange += LCDEnableChangeCallback;
+			memory.OnMemoryError += ErrorCallback;
+			cpu.OnCPUError += ErrorCallback;
 		}
 
 		//Loads the specified ROM.
@@ -113,62 +116,54 @@ namespace LunaGB.Core
 		public void Step()
 		{
 			lock(emuStepLock){
-				if (debug || debugger.stepping) {
+				if (debugger.stepping) {
 					PrintDebugInfo();
+				}
+				if(debug){
+					LogDebugInfo();
 				}
 
 				//Check the JOYP register to see if any buttons were pressed. If so,
 				//request a joypad interrupt, and exit stop mode if enabled.
 				CheckJOYP();
 
-				cpu.ExecuteInstruction();
-
-				//If an error occured, stop the emulator.
-				if (cpu.errorOccured == true || memory.writeErrorOccured == true)
-				{
-					Stop();
-					Console.WriteLine(cpu.GetCPUStateInfo());
-					return;
-				}
+				//Step the CPU
+				cpu.Step();
 				
+				//Update the different cycle variables by the number of cycles the CPU took.
 				int cyclesTaken = cpu.cycles;
 				cycles += cyclesTaken;
 				frameCycleCount += cyclesTaken;
-				divCycleTimer += cyclesTaken;
-				timaCycleTimer += cyclesTaken;
 
-				//If we're in the middle of an OAM DMA transfer, transfer 1 byte for each cycle
-				if(memory.doingDMATransfer){
-					for(int i = 0; i < cyclesTaken; i++){
+				bool ppuActive = ppu.lcdcEnable == 1 ? true : false;
+
+				//Step everything else by the number of cycles the CPU took.
+				for(int i = 0; i < cyclesTaken; i++){
+					//Step OAM DMA if currently doing an OAM DMA transfer
+					if(memory.doingDMATransfer){
 						memory.OAMDMAStep();
-						if(!memory.doingDMATransfer) break;
 					}
-				}
 
-				//Update DIV and TIMA registers
-				UpdateDIVAndTIMA();
-
-				//Check if the LCD is enabled
-				if(ppu.lcdcEnable == 1){
-					//If so, step the PPU by the number of cycles the last instruction took
-					for(int i = 0; i < cyclesTaken; i++){
+					//Step the PPU if it's active
+					if(ppuActive){
 						ppu.Step();
 					}
-				}
 
-				//Handle interrupts
-				cpu.HandleInterrupts();
+					//Update DIV and TIMA registers
+					UpdateDIVAndTIMA();
+				}
 
 				//Check if we've reached the end of the frame in cycles
 				if(frameCycleCount >= cyclesPerFrame){
-					//Render the screen, and pause the thread for approx 16ms (todo: find a better way)
+					//Render the screen, and keep the thread waiting until we're at the end of frame in actual time.
 					if(display.enabled) display.Render();
 					frameCycleCount %= cyclesPerFrame;
+					//TODO: is there a better way to keep a thread waiting than this?
 					while(sw.Elapsed.TotalMilliseconds < msPerFrame){
 						Thread.Sleep(0);
 					}
-					sw.Reset();
-					sw.Start();
+					//Once the amount of time for a single frame has passed, restart the stopwatch for the next frame.
+					sw.Restart();
 				}
 
 				if (cycles >= maxCycles){
@@ -186,11 +181,20 @@ namespace LunaGB.Core
 			}
 		}
 
+		//Called by the emulator if an error occurs somewhere (CPU, memory, etc...)
+		void ErrorCallback(){
+			Stop();
+			PrintDebugInfo();
+		}
+
 		//Cycle numbers for how often to increment TIMA based on the selected
 		//frequency in TAC.
 		int[] tacClockIncrementFrequencyCycles = new int[]{256,4,16,64};
 
 		void UpdateDIVAndTIMA(){
+			divCycleTimer++;
+			timaCycleTimer++;
+
 			//Check if DIV should be incremented
 			if(divCycleTimer >= 16384){
 				divCycleTimer %= 16384;
@@ -214,7 +218,7 @@ namespace LunaGB.Core
 					if(tima == 0){
 						tima = tma;
 						//TODO: For some reason, enabling this breaks Dr. Mario. Why?
-						//memory.SetHRAMBit((int)IORegister.IF, 2, 1);
+						memory.SetHRAMBit((int)IORegister.IF, 2, 1);
 					}
 				}
 				memory.hram[(int)IORegister.TIMA] = tima;
@@ -249,7 +253,17 @@ namespace LunaGB.Core
 		{
 			Console.WriteLine(disassembler.Disassemble(cpu.pc));
 			Console.WriteLine(cpu.GetCPUStateInfo());
+			Console.WriteLine(ppu.GetPPUStateInfo());
+			Console.WriteLine("Cycles: " + cycles);
 			Console.WriteLine();
+		}
+
+		public void LogDebugInfo(){
+			logger.Log(disassembler.Disassemble(cpu.pc));
+			logger.Log(cpu.GetCPUStateInfo());
+			logger.Log(ppu.GetPPUStateInfo());
+			logger.Log("Cycles: " + cycles);
+			logger.Log("");
 		}
 
 		public Memory GetMemory(){

@@ -30,13 +30,16 @@ namespace LunaGB.Core
 		public ROM rom;
 		public Debugger debugger;
 
+		//Events
 		public delegate void MemoryReadWriteEvent(int address);
 		public event MemoryReadWriteEvent OnMemoryRead;
 		public event MemoryReadWriteEvent OnMemoryWrite;
 		public delegate void LCDEnableEvent(bool state);
 		public event LCDEnableEvent OnLCDEnableChange;
+		public delegate void MemoryErrorEvent();
+		public event MemoryErrorEvent OnMemoryError;
 
-		public bool writeErrorOccured = false;
+
 		public bool canAccessOAM = false;
 		public bool canAccessVRAM = false;
 		public bool doingDMATransfer = false;
@@ -72,7 +75,6 @@ namespace LunaGB.Core
 			//Init the SB register (all 1s for now)
 			hram[(int)IORegister.SB] = 0xFF;
 
-			writeErrorOccured = false;
 			canAccessOAM = true;
 			canAccessVRAM = true;
 			doingDMATransfer = false;
@@ -109,7 +111,9 @@ namespace LunaGB.Core
 			}else if(address < 0xC000){
 				//Cartridge RAM Bank
 				//A000-BFFF
-				return rom.romMapper.GetByte(address);
+				if(rom.loadedRom){
+					return rom.romMapper.GetByte(address);
+				}
 				//Console.WriteLine("Tried to read from cartridge ram which isn't implemented yet");
 			}else if(address < 0xD000){
 				//wram bank slot 0 (wram bank 0)
@@ -119,7 +123,7 @@ namespace LunaGB.Core
 				//wram bank slot 1 (switchable)
 				//D000-DFFF
 				//TODO: actually handle wram banking
-				return wram[address - 0xD000];
+				return wram[address - 0xC000];
 			}else if(address < 0xF000){
 				//mirror of wram bank slot 0 (echo ram)
 				//E000-EFFF
@@ -202,7 +206,7 @@ namespace LunaGB.Core
 				//D000-DFFF
 
 				//TODO: actually handle wram banking
-				wram[address - 0xD000] = b;
+				wram[address - 0xC000] = b;
 			}else if(address < 0xF000){
 				//mirror of wram bank slot 0 (echo ram)
 				//E000-EFFF
@@ -240,7 +244,7 @@ namespace LunaGB.Core
 			}
 			}catch(Exception e){
 				Console.WriteLine(e.Message);
-				writeErrorOccured = true;
+				OnMemoryError?.Invoke();
 			}
 		}
 
@@ -266,6 +270,7 @@ namespace LunaGB.Core
 				//Only bits 4/5 are read/writeable
 				SetHRAMBit((int)IORegister.P1,4,(val >> 4) & 1);
 				SetHRAMBit((int)IORegister.P1,5,(val >> 5) & 1);
+				Input.UpdateJOYP();
 				break;
 				case IORegister.DIV:
 				//If the CPU tries to write to the DIV register, reset it

@@ -18,6 +18,7 @@ namespace LunaGB.Avalonia.Views
 		Memory memory;
 		byte[] tileData = new byte[0x1800];
 		byte[] tilemapData = new byte[0x800];
+		int[] bgPalette = new int[4];
 		int tileWidth = 16;
 		int tileHeight;
 		int tilemapIndex = 0;
@@ -99,6 +100,10 @@ namespace LunaGB.Avalonia.Views
 
 			for(int i = 0; i < 0x800; i++){
 				tilemapData[i] = memory.GetByte(0x9800 + i);
+			}
+			byte bgp = memory.GetIOReg(IORegister.BGP);
+			for(int i = 0; i < 4; i++){
+				bgPalette[i] = (byte)((bgp >> (i*2)) & 3);
 			}
 		}
 

@@ -114,11 +114,11 @@ namespace LunaGB.Core {
 		public bool haltMode;
 		bool haltBug; //is the halt bug active?
 		bool debug = true;
-		public bool errorOccured = false; //has the cpu ran into an error?
+		//Event used for if the CPU encounters an error.
+		public delegate void CPUErrorEvent();
+		public event CPUErrorEvent OnCPUError;
 
 		public Memory memory;
-
-
 
 		public CPU(Memory memory) {
 			this.memory = memory;
@@ -142,7 +142,7 @@ namespace LunaGB.Core {
 			stopMode = false;
 			haltBug = false;
 			gbcCpuSpeed = false;
-			errorOccured = false;
+			interruptRequested = false;
 		}
 
 		public string GetCPUStateInfo() {
@@ -150,8 +150,7 @@ namespace LunaGB.Core {
 				+ ", D = " + D.ToString("X2") + ", E = " + E.ToString("X2") + ", H = " + H.ToString("X2")
 				+ ", L = " + L.ToString("X2") + "\n";
 			s += "PC = " + pc.ToString("X4") + ", SP = " + sp.ToString("X4") + "\n";
-			s += string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}\n", flagN, flagZ, flagC, flagH);
-			s += "Cycles: " + cycles;
+			s += string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}", flagN, flagZ, flagC, flagH);
 			return s;
 		}
 
@@ -159,9 +158,19 @@ namespace LunaGB.Core {
 			gbcCpuSpeed = !gbcCpuSpeed;
 		}
 
-		public void ExecuteInstruction() {
+		public void Step(){
 			cycles = 0;
-			
+
+			ExecuteInstruction();
+
+			if(interruptRequested){
+				CallInterrupt();
+			}else{
+				CheckForRequestedInterrupts();
+			}
+		}
+
+		public void ExecuteInstruction() {
 			if(haltMode || stopMode){
 				//If the CPU is in low power mode, don't execute instructions
 				cycles += 4; //Increment by 4 cycles???
@@ -207,7 +216,8 @@ namespace LunaGB.Core {
 										ChangeCPUSpeed();
 									}else{
 										//the CPU enters a non deterministic state, throw an error
-										throw new Exception("Error: invalid stop opcode");
+										Console.WriteLine("Error: invalid stop opcode");
+										OnCPUError?.Invoke();
 									}
 								}else{
 									//stop is 2 bytes, enter halt mode, reset div, change cpu speed
@@ -980,8 +990,8 @@ namespace LunaGB.Core {
 					RST(0x38);
 					break;
 				default:
-					Console.WriteLine("Illegal opcode 0x" + opcode.ToString("X2"));
-					errorOccured = true;
+					Console.WriteLine("Error: Illegal opcode 0x" + opcode.ToString("X2"));
+					OnCPUError?.Invoke();
 					break;
 			}
 			}
@@ -1465,10 +1475,10 @@ namespace LunaGB.Core {
 			Joypad
 		}
 
+		bool interruptRequested = true;
+		Interrupt requestedInterrupt;
 
-		//Handles any interrupts that are requested, if any.
-		//TODO: This might need to be able to service multiple interrupts
-		public void HandleInterrupts(){
+		public void CheckForRequestedInterrupts(){
 			//Only check for interrupts if ime is set
 			if(ime && CheckIfInterruptPending()){
 				byte IF = memory.GetIOReg(IORegister.IF);
@@ -1476,7 +1486,8 @@ namespace LunaGB.Core {
 				//Call the first interrupt handler that can be called.
 				for(int i = 0; i < 5; i++){
 					if((IF & IE & (1 << i)) != 0){
-						CallInterruptHandler((Interrupt)i);
+						interruptRequested = true;
+						requestedInterrupt = (Interrupt)i;
 						break;
 					}
 				}
@@ -1488,18 +1499,19 @@ namespace LunaGB.Core {
 		1)The CPU waits 8 cycles/2 M-cycles.
 		2)The current PC is pushed to the stack, consuming another 8 cycles.
 		3)The PC is set to the corresponding interrupt handler address, consuming 4 cycles. */
-		void CallInterruptHandler(Interrupt interrupt){
+		void CallInterrupt(){
 			ushort address = 0;
 
 			//Reset the corresponding bit in the IF register
-			memory.SetHRAMBit((int)IORegister.IF, (int)interrupt, 0);
+			memory.SetHRAMBit((int)IORegister.IF, (int)requestedInterrupt, 0);
 			//Reset the IME flag
 			ime = false;
 			//Exit low power mode
 			if(haltMode) haltMode = false;
+			interruptRequested = false;
 
 			//Get the corresponding interrupt handler's address
-			switch(interrupt){
+			switch(requestedInterrupt){
 				case Interrupt.VBlank:
 				address = 0x40;
 				break;
