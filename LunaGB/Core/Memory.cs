@@ -74,6 +74,8 @@ namespace LunaGB.Core
 			SetHRAMBit((int)IORegister.LCDC, 7, 1);
 			//Init the SB register (all 1s for now)
 			hram[(int)IORegister.SB] = 0xFF;
+			//Init the DIV register
+			hram[(int)IORegister.DIV] = 0xAB;
 
 			canAccessOAM = true;
 			canAccessVRAM = true;
@@ -131,7 +133,7 @@ namespace LunaGB.Core
 			}else if(address < 0xFE00){
 				//mirror of wram bank slot 1 (echo ram)
 				//F000-FDFF
-				return wram[address - 0xF000];
+				return wram[address - 0xE000];
 			}else if(address < 0xFEA0){
 				//OAM
 				//FE00-FE9F
@@ -214,7 +216,7 @@ namespace LunaGB.Core
 			}else if(address < 0xFE00){
 				//mirror of wram bank slot 1 (echo ram)
 				//F000-FDFF
-				wram[address - 0xF000] = b;
+				wram[address - 0xE000] = b;
 			}else if(address < 0xFEA0){
 				//OAM
 				//FE00-FE9F
@@ -270,7 +272,6 @@ namespace LunaGB.Core
 				//Only bits 4/5 are read/writeable
 				SetHRAMBit((int)IORegister.P1,4,(val >> 4) & 1);
 				SetHRAMBit((int)IORegister.P1,5,(val >> 5) & 1);
-				Input.UpdateJOYP();
 				break;
 				case IORegister.DIV:
 				//If the CPU tries to write to the DIV register, reset it

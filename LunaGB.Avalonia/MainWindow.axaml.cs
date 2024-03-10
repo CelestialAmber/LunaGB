@@ -28,14 +28,14 @@ namespace LunaGB.Avalonia {
 
 		//Keyboard button map
 		public static Dictionary<Key,Input.Button> buttonKeys = new Dictionary<Key,Input.Button>{
-			{ Key.Up,Input.Button.Up },
-			{ Key.Down,Input.Button.Down },
-			{ Key.Left,Input.Button.Left },
-			{ Key.Right,Input.Button.Right },
-			{ Key.RightShift,Input.Button.Select },
-			{ Key.Enter,Input.Button.Start },
-			{ Key.Z,Input.Button.B },
-			{ Key.X,Input.Button.A },
+			{ Key.I,Input.Button.Up },
+			{ Key.K,Input.Button.Down },
+			{ Key.J,Input.Button.Left },
+			{ Key.L,Input.Button.Right },
+			{ Key.X,Input.Button.Select },
+			{ Key.C,Input.Button.Start },
+			{ Key.S,Input.Button.B },
+			{ Key.A,Input.Button.A },
 		};
 
 		public MainWindow() {

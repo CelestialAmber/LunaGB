@@ -18,13 +18,18 @@ namespace LunaGB.Avalonia.Views
 		Memory memory;
 		byte[] tileData = new byte[0x1800];
 		byte[] tilemapData = new byte[0x800];
+		byte[] oam = new byte[0xA0];
 		int[] bgPalette = new int[4];
+		int[] objPalette0 = new int[4];
+		int[] objPalette1 = new int[4];
+		int objectSize;
 		int tileWidth = 16;
 		int tileHeight;
 		int tilemapIndex = 0;
 		int tilesetIndex = 0;
 		LunaImage tileDataImage;
 		LunaImage tilemapImage;
+		LunaImage objectsPreviewImage;
 
 		public GraphicsViewer(Emulator emulator)
 		{
@@ -32,6 +37,7 @@ namespace LunaGB.Avalonia.Views
 
 			memory = emulator.GetMemory();
 			tilemapImage = new LunaImage(256,256);
+			objectsPreviewImage = new LunaImage(160,144);
 			UpdateTileDataImage();
 			UpdateGraphicsView();
 		}
@@ -78,33 +84,47 @@ namespace LunaGB.Avalonia.Views
 		}
 
 		void UpdateGraphicsView(){
-			ReadVRAM();
+			ReadMemory();
 			DrawTileData();
 			DrawTilemap();
+			DrawObjectPreview();
 			UpdateWindowImages();
 		}
 
 		public void UpdateWindowImages() {
 			tileDataImageBox.Source = new Bitmap(new MemoryStream(tileDataImage.ToByteArray()));
 			tilemapImageBox.Source = new Bitmap(new MemoryStream(tilemapImage.ToByteArray()));
+			objectPreviewItemBox.Source = new Bitmap(new MemoryStream(objectsPreviewImage.ToByteArray()));
 		}
 
 
 		Color[] palette = {new Color(255,255,255), new Color(170,170,170), new Color(85,85,85), new Color(0,0,0)};
 
 
-		public void ReadVRAM(){
+		public void ReadMemory(){
 			for(int i = 0; i < 0x1800; i++){
-				tileData[i] = memory.GetByte(0x8000 + i);
+				tileData[i] = memory.vram[i];
 			}
 
 			for(int i = 0; i < 0x800; i++){
-				tilemapData[i] = memory.GetByte(0x9800 + i);
+				tilemapData[i] = memory.vram[0x1800 + i];
 			}
+
+			for(int i = 0; i < 0xA0; i++){
+				oam[i] = memory.oam[i];
+			}
+
 			byte bgp = memory.GetIOReg(IORegister.BGP);
+			byte obp0 = memory.GetIOReg(IORegister.OBP0);
+			byte obp1 = memory.GetIOReg(IORegister.OBP1);
+
 			for(int i = 0; i < 4; i++){
 				bgPalette[i] = (byte)((bgp >> (i*2)) & 3);
+				objPalette0[i] = (byte)((obp0 >> (i*2)) & 3);
+				objPalette1[i] = (byte)((obp1 >> (i*2)) & 3);
 			}
+
+			objectSize = memory.GetHRAMBit(2, (int)IORegister.LCDC);
 		}
 
 		public void DrawTilemap(){
@@ -145,6 +165,81 @@ namespace LunaGB.Avalonia.Views
 					int palIndex = lo + (hi << 1);
 					Color col = palette[palIndex];
 					image.SetPixel(xPos*8 + x,yPos*8 + y, col);
+				}
+			}
+		}
+
+		void DrawObjectPreview(){
+			//Fill the image with a base bg color
+			for(int x = 0; x < 160; x++){
+				for(int y = 0; y < 144; y++){
+					objectsPreviewImage.SetPixel(x,y,new Color(255,0,255));
+				}
+			}
+
+			int width = 8;
+			int height = objectSize == 0 ? 8 : 16;
+
+			//Draw all 40 objects
+			for(int i = 0; i < 40; i++){
+				int yPos = memory.oam[i*4];
+				int xPos = memory.oam[i*4 + 1];
+
+				int tileIndex = memory.oam[i*4 + 2];
+				/*
+				Flags:
+				bits 0-2: cgb palette (gbc only)
+				bit 3: vram bank (gbc only)
+				bit 4: dmg palette (gb only)
+				bit 5: x flip
+				bit 6: y flip
+				bit 7: priority
+				*/
+				byte flags = memory.oam[i*4 + 3];
+				int palette = (flags >> 4) & 1;
+				bool xFlip = ((flags >> 5) & 1) == 1 ? true : false;
+				bool yFlip = ((flags >> 6) & 1) == 1 ? true : false;
+				int priority = (flags >> 7) & 1;
+
+				int x = xPos - 8;
+				int y = yPos - 16;
+
+				//If the object is within the bounds of the screen, draw it to the preview image
+				if(x + width >= 0 && x < 160 && y + height >= 0 && y < 144){
+					if(objectSize == 0){
+						DrawObjectTile(x,y,xFlip,yFlip,palette,tileIndex);
+					}else{
+						tileIndex &= 0b11111110; //Bit 0 is ignored for 8x16 mode
+						DrawObjectTile(x,y,xFlip,yFlip,palette,yFlip ? tileIndex + 1 : tileIndex);
+						DrawObjectTile(x,y + 8,xFlip,yFlip,palette,yFlip ? tileIndex : tileIndex + 1);
+					}
+				}
+			}
+		}
+
+		void DrawObjectTile(int xPos, int yPos, bool xFlip, bool yFlip, int pal, int tileIndex){
+			int tileAddress = tileIndex*16;
+
+			for(int y = 0; y < 8; y++){
+				byte loByte = tileData[tileAddress + y*2];
+				byte hiByte = tileData[tileAddress + y*2 + 1];
+				for(int x = 0; x < 8; x++){
+					int lo = (loByte >> (7-x)) & 1;
+					int hi = (hiByte >> (7-x)) & 1;
+					int palIndex = lo + (hi << 1);
+
+					//If the object's priority flag is 1 and this pixel's color index isn't 0,
+					//don't render it
+					if(palIndex == 0) continue;
+
+					int color = pal == 0 ? objPalette0[palIndex] : objPalette1[palIndex];
+
+					int pixelX = xPos + (xFlip ? 7-x : x);
+					int pixelY = yPos + (yFlip ? 7-y : y);
+					//Only render the current pixel if it is within the screen
+					if(pixelX >= 0 && pixelX < 160 && pixelY >= 0 && pixelY < 144){
+						objectsPreviewImage.SetPixel(pixelX, pixelY, palette[color]);
+					}
 				}
 			}
 		}

@@ -217,7 +217,6 @@ namespace LunaGB.Core
 					//If tima overflows, set it to tma, and request a timer interrupt
 					if(tima == 0){
 						tima = tma;
-						//TODO: For some reason, enabling this breaks Dr. Mario. Why?
 						memory.SetHRAMBit((int)IORegister.IF, 2, 1);
 					}
 				}

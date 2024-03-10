@@ -2,6 +2,7 @@
 using System.Data.Common;
 using System.Collections.Generic;
 using LunaGB.Graphics;
+using System.Threading;
 
 namespace LunaGB.Core
 {
@@ -20,6 +21,7 @@ namespace LunaGB.Core
 
 		public byte ly = 0;
 		int windowLine = 0; //Internal line counter for the window
+		bool WY_latch = false;
 		PPUMode mode;
 		public const int cyclesPerScanline = 456; //each scanline takes 456 cycles
 		public int scanlineCycleCount = 0;
@@ -135,6 +137,7 @@ namespace LunaGB.Core
 
 		public void Init(){
 			ly = 0;
+			WY_latch = false;
 			windowLine = 0;
 			scanlineCycleCount = 0;
 			SetMode(PPUMode.OAM);
@@ -170,6 +173,9 @@ namespace LunaGB.Core
 			int mode2IntSelect = (stat >> 5) & 1;
 			int lycIntSelect = (stat >> 6) & 1;
 
+			//Check if WY_latch should be enabled
+			if(!WY_latch && windowEnable == 1 && ly == WY) WY_latch = true;
+
 			//If we're not in vblank, check whether we should change mode
 			if(mode != PPUMode.VBlank){
 				//If 80 or more cycles have passed and we're in mode 2 (oam), change to mode 3 (drawing)
@@ -193,6 +199,11 @@ namespace LunaGB.Core
 				scanlineCycleCount %= cyclesPerScanline;
 				
 				ly++;
+				if(windowEnable == 1){
+					if(WY_latch && WX <= 166){
+						windowLine++;
+					}
+				}
 
 				if(ly < 144){
 					SetMode(PPUMode.OAM);
@@ -205,10 +216,11 @@ namespace LunaGB.Core
 					if(mode1IntSelect == 1) RequestSTATInterrupt();
 					//Update the display
 					UpdateDisplay();
-					windowLine = 0;
 				}else if(ly == 154){
 					//If ly is 154, we're at the end of vblank, reset ly to 0
 					ly = 0;
+					WY_latch = false;
+					windowLine = 0;
 					SetMode(PPUMode.OAM);
 				}
 				memory.SetIOReg(IORegister.LY, ly);
@@ -247,7 +259,6 @@ namespace LunaGB.Core
 			memory.SetHRAMBit((int)IORegister.STAT,0,(modeVal >> 1) & 1);
 
 			//Update the memory access flags depending on the new mode
-			/*
 			if(newMode == PPUMode.OAM){
 				memory.canAccessOAM = false;
 			}else if(newMode == PPUMode.Drawing){
@@ -256,7 +267,6 @@ namespace LunaGB.Core
 				memory.canAccessOAM = true;
 				memory.canAccessVRAM = true;
 			}
-			*/
 		}
 
 
@@ -341,6 +351,9 @@ namespace LunaGB.Core
 			if(objEnable == 1){
 				DrawObjects();
 			}
+			//display.Update(pixels);
+			//display.Render();
+			//Thread.Sleep(1);
 		}
 
 		void DrawBackground(){
@@ -362,14 +375,14 @@ namespace LunaGB.Core
 				int tilePixelXPos = tilemapPixelXPos % 8;
 				int tilePixelYPos = tilemapPixelYPos % 8;
 				int tilemapByteIndex = tileY*32 + tileX;
-				int tileIndex = memory.GetByte(tilemapStartAddress + tilemapByteIndex);
+				int tileIndex = memory.vram[tilemapStartAddress + tilemapByteIndex - 0x8000];
 				//If the tile data area is 0, the tile index is a signed byte (-128,127)
 				if(tileDataArea == 0) tileIndex = (sbyte)tileIndex;
 
 				int tileAddress = tileDataStartAddress + tileIndex*16;
 
-				byte loByte = memory.GetByte(tileAddress + tilePixelYPos*2);
-				byte hiByte = memory.GetByte(tileAddress + tilePixelYPos*2 + 1);
+				byte loByte = memory.vram[tileAddress + tilePixelYPos*2 - 0x8000];
+				byte hiByte = memory.vram[tileAddress + tilePixelYPos*2 + 1 - 0x8000];
 				int lo = (loByte >> (7-tilePixelXPos)) & 1;
 				int hi = (hiByte >> (7-tilePixelXPos)) & 1;
 				int palIndex = lo + (hi << 1);
@@ -386,35 +399,32 @@ namespace LunaGB.Core
 			int windowX = WX - 7;
 			int windowY = WY;
 
-			//If the window isn't visible, don't render it
-			if(windowX >= 160 || windowY >= 144 || (ly < windowY)) return;
+			if(WY_latch && windowX < 160){
+				int startX = windowX >= 0 ? windowX : 0;
 
-			int startX = windowX >= 0 ? windowX : 0;
+				for(int x = startX; x < 160; x++){
+					int y = windowLine;
+					int tilemapPixelXPos = x - windowX;
+					int tilemapPixelYPos = windowLine;
+					int tileX = tilemapPixelXPos/8;
+					int tileY = tilemapPixelYPos/8;
+					int tilePixelXPos = tilemapPixelXPos % 8;
+					int tilePixelYPos = tilemapPixelYPos % 8;
+					int tilemapByteIndex = tileY*32 + tileX;
+					int tileIndex = memory.vram[tilemapStartAddress + tilemapByteIndex - 0x8000];
+					//If the tile data area is 0, the tile index is a signed byte (-128,127)
+					if(tileDataArea == 0) tileIndex = (sbyte)tileIndex;
 
-			for(int x = startX; x < 160; x++){
-				int y = ly; //windowLine;
-				int tilemapPixelXPos = x - windowX;
-				int tilemapPixelYPos = y - windowY;
-				int tileX = tilemapPixelXPos/8;
-				int tileY = tilemapPixelYPos/8;
-				int tilePixelXPos = tilemapPixelXPos % 8;
-				int tilePixelYPos = tilemapPixelYPos % 8;
-				int tilemapByteIndex = tileY*32 + tileX;
-				int tileIndex = memory.GetByte(tilemapStartAddress + tilemapByteIndex);
-				//If the tile data area is 0, the tile index is a signed byte (-128,127)
-				if(tileDataArea == 0) tileIndex = (sbyte)tileIndex;
+					int tileAddress = tileDataStartAddress + tileIndex*16;
 
-				int tileAddress = tileDataStartAddress + tileIndex*16;
-
-				byte loByte = memory.GetByte(tileAddress + tilePixelYPos*2);
-				byte hiByte = memory.GetByte(tileAddress + tilePixelYPos*2 + 1);
-				int lo = (loByte >> (7-tilePixelXPos)) & 1;
-				int hi = (hiByte >> (7-tilePixelXPos)) & 1;
-				int palIndex = lo + (hi << 1);
-				pixels[x,y] = bgPalette[palIndex];
+					byte loByte = memory.vram[tileAddress + tilePixelYPos*2 - 0x8000];
+					byte hiByte = memory.vram[tileAddress + tilePixelYPos*2 + 1 - 0x8000];
+					int lo = (loByte >> (7-tilePixelXPos)) & 1;
+					int hi = (hiByte >> (7-tilePixelXPos)) & 1;
+					int palIndex = lo + (hi << 1);
+					pixels[x,ly] = bgPalette[palIndex];
+				}
 			}
-
-			windowLine++;
 		}
 
 		/* Loops through each object selected to be drawn on the current scanline,
@@ -457,12 +467,14 @@ namespace LunaGB.Core
 						lineToRender = ly - screenY;
 						if(yFlip) lineToRender = 7 - lineToRender;
 					}else if(size == 1){
+						//For 8x16 sprite mode, bit 0 of the tile index is ignored.
+						tileIndex &= 0b11111110;
 						//If the sprite mode is 8x16, check whether a line from the top or bottom half should be rendered.
 						lineToRender = ly - screenY;
 						if(yFlip) lineToRender = 15 - lineToRender;
 						//If the bottom half is on the scanline, increment the tile index.
 						if(lineToRender >= 8){
-							tileIndex = (tileIndex & 0b11111110) + 1;
+							tileIndex++;
 							lineToRender %= 8;
 						}
 					}
@@ -474,10 +486,10 @@ namespace LunaGB.Core
 
 
 		void DrawObjectLine(int xPos, int y, bool xFlip, int priority, int palette, int tileIndex){
-			int tileAddress = 0x8000 + tileIndex*16;
+			int tileAddress = tileIndex*16;
 
-			byte loByte = memory.GetByte(tileAddress + y*2);
-			byte hiByte = memory.GetByte(tileAddress + y*2 + 1);
+			byte loByte = memory.vram[tileAddress + y*2];
+			byte hiByte = memory.vram[tileAddress + y*2 + 1];
 			for(int x = 0; x < 8; x++){
 				int lo = (loByte >> (7-x)) & 1;
 				int hi = (hiByte >> (7-x)) & 1;
