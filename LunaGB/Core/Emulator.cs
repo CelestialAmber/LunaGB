@@ -1,15 +1,12 @@
 ﻿using System;
-using LunaGB.Core.Debug;
 using System.Threading;
 using System.Diagnostics;
 using LunaGB.Graphics;
 using LunaGB.Utils;
+using System.Text;
 
-namespace LunaGB.Core
-{
-	public class Emulator
-	{
-
+namespace LunaGB.Core{
+	public class Emulator{
 		CPU cpu;
 		PPU ppu;
 		Memory memory;
@@ -28,16 +25,17 @@ namespace LunaGB.Core
 		object emuStepLock = new object();
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
-		public const float frameRate = 59.73f; //frame rate/refresh rate
+		public const int cyclesPerFrame = 70224; //~= 4194304/59.7275
 		int cycles = 0;
 		int frameCycleCount = 0;
 		int divCycleTimer = 0;
 		int timaCycleTimer = 0;
-		int cyclesPerFrame = 0;
 		double msPerFrame = 0d;
 		byte prevJOYP;
 		Logger logger;
 		Stopwatch sw;
+		public float currentFPS;
+		public System.Timers.Timer updateSaveFileTimer;
 
 		public Emulator(Debug.Debugger debugger)
 		{
@@ -50,13 +48,24 @@ namespace LunaGB.Core
 			this.debugger = debugger;
 			Input.memory = memory;
 			logger = new Logger("log.txt");
-			cyclesPerFrame = (int)Math.Floor((float)maxCycles/59.73f);
-			msPerFrame = 1000d*(1d/frameRate);
+			msPerFrame = 1000d*(1d/Options.frameRate);
 			sw = new Stopwatch();
+			InitUpdateSaveFileTimer();
 			//Setup events
 			memory.OnLCDEnableChange += LCDEnableChangeCallback;
 			memory.OnMemoryError += ErrorCallback;
 			cpu.OnCPUError += ErrorCallback;
+
+		}
+
+		void InitUpdateSaveFileTimer(){
+			updateSaveFileTimer = new System.Timers.Timer(500);
+			updateSaveFileTimer.Elapsed += OnUpdateSaveFileTimerElapsed;
+			updateSaveFileTimer.AutoReset = true;
+		}
+
+		private void OnUpdateSaveFileTimerElapsed(object? source, System.Timers.ElapsedEventArgs e){
+			rom.UpdateSaveFile();
 		}
 
 		//Loads the specified ROM.
@@ -66,20 +75,31 @@ namespace LunaGB.Core
 
 		//Starts the emulator.
 		public void Start(CancellationToken token) {
+			ctoken = token;
 			isRunning = true;
 			frameCycleCount = 0;
 			divCycleTimer = 0;
 			timaCycleTimer = 0;
 			paused = false;
+			prevJOYP = memory.GetIOReg(IORegister.P1);
+
+			//Init all of the components
 			debugger.InitBreakpoints();
 			memory.Init();
 			cpu.Init();
 			ppu.Init();
 			rom.Init();
-			ctoken = token;
+
+			//Clear the display
 			display.Clear();
 			display.Render();
-			prevJOYP = memory.GetIOReg(IORegister.P1);
+
+			//Start the timer for updating the rom's save file periodically if the rom uses save data.
+			if(rom.useSaveFile){
+				updateSaveFileTimer.Start();
+			}
+
+			//Start the emulator
 			Run();
 		}
 
@@ -125,7 +145,7 @@ namespace LunaGB.Core
 
 				//Check the JOYP register to see if any buttons were pressed. If so,
 				//request a joypad interrupt, and exit stop mode if enabled.
-				CheckJOYP();
+				//CheckJOYP();
 
 				//Step the CPU
 				cpu.Step();
@@ -155,13 +175,17 @@ namespace LunaGB.Core
 
 				//Check if we've reached the end of the frame in cycles
 				if(frameCycleCount >= cyclesPerFrame){
+					CheckJOYP();
 					//Render the screen, and keep the thread waiting until we're at the end of frame in actual time.
 					if(display.enabled) display.Render();
 					frameCycleCount %= cyclesPerFrame;
-					//TODO: is there a better way to keep a thread waiting than this?
-					while(sw.Elapsed.TotalMilliseconds < msPerFrame){
-						Thread.Sleep(0);
+					if(Options.limitFrameRate){
+						//TODO: is there a better way to keep a thread waiting than this?
+						while(sw.Elapsed.TotalMilliseconds < msPerFrame){
+							Thread.Sleep(0);
+						}
 					}
+					UpdateFPS();
 					//Once the amount of time for a single frame has passed, restart the stopwatch for the next frame.
 					sw.Restart();
 				}
@@ -171,6 +195,11 @@ namespace LunaGB.Core
 					frameCycleCount = cycles;
 				}
 			}
+		}
+
+		//TODO: calculate fps over multiple frames
+		void UpdateFPS(){
+			currentFPS = (float)(1000f/sw.Elapsed.TotalMilliseconds);
 		}
 
 		void LCDEnableChangeCallback(bool state){
@@ -189,7 +218,7 @@ namespace LunaGB.Core
 
 		//Cycle numbers for how often to increment TIMA based on the selected
 		//frequency in TAC.
-		int[] tacClockIncrementFrequencyCycles = new int[]{256,4,16,64};
+		int[] tacClockIncrementFrequencyCycles = new int[]{1024,16,64,256};
 
 		void UpdateDIVAndTIMA(){
 			divCycleTimer++;
@@ -217,7 +246,7 @@ namespace LunaGB.Core
 					//If tima overflows, set it to tma, and request a timer interrupt
 					if(tima == 0){
 						tima = tma;
-						memory.SetHRAMBit((int)IORegister.IF, 2, 1);
+						memory.RequestInterrupt(Interrupt.Timer);
 					}
 				}
 				memory.hram[(int)IORegister.TIMA] = tima;
@@ -227,6 +256,8 @@ namespace LunaGB.Core
 		//Stops the emulator.
 		public void Stop() {
 			isRunning = false;
+			//Stop the update save file timer if it was enabled.
+			updateSaveFileTimer.Stop();
 		}
 
 		void CheckJOYP(){
@@ -236,7 +267,7 @@ namespace LunaGB.Core
 			for(int i = 0; i < 4; i++){
 				if(((prevJOYP >> i) & 1) == 1 && ((JOYP >> i) & 1) == 0){
 					//If so, request a joypad interrupt
-					memory.SetHRAMBit((int)IORegister.IF, 4, 1);
+					memory.RequestInterrupt(Interrupt.Joypad);
 					//If stop mode is active, disable it
 					if(cpu.stopMode == true){
 						cpu.stopMode = false;
@@ -251,18 +282,30 @@ namespace LunaGB.Core
 		public void PrintDebugInfo()
 		{
 			Console.WriteLine(disassembler.Disassemble(cpu.pc));
-			Console.WriteLine(cpu.GetCPUStateInfo());
-			Console.WriteLine(ppu.GetPPUStateInfo());
-			Console.WriteLine("Cycles: " + cycles);
+			Console.WriteLine(GetEmulatorStateInfo());
 			Console.WriteLine();
 		}
 
 		public void LogDebugInfo(){
 			logger.Log(disassembler.Disassemble(cpu.pc));
-			logger.Log(cpu.GetCPUStateInfo());
-			logger.Log(ppu.GetPPUStateInfo());
-			logger.Log("Cycles: " + cycles);
+			logger.Log(GetEmulatorStateInfo());
 			logger.Log("");
+		}
+
+		string GetEmulatorStateInfo(){
+			byte div = memory.GetIOReg(IORegister.DIV);
+			byte tma = memory.GetIOReg(IORegister.TMA);
+			byte tima = memory.GetIOReg(IORegister.TIMA);
+			byte IF = memory.GetIOReg(IORegister.IF);
+
+			StringBuilder sb = new StringBuilder();
+			sb.AppendLine(string.Format("AF = {0:X4}, BC = {1:X4}, DE = {2:X4}, HL = {3:X4}",cpu.AF, cpu.BC, cpu.DE, cpu.HL));
+			sb.AppendLine(string.Format("PC = {0:X4}, SP = {1:X4}, IE = {2:X2}, IF = {3:X2}, IME = {4}",cpu.pc, cpu.sp, cpu.IE, IF, cpu.ime));
+			sb.AppendLine(string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}", cpu.flagN, cpu.flagZ, cpu.flagC, cpu.flagH));
+			sb.AppendLine(string.Format("LY = {0:X2}", ppu.ly));
+			sb.AppendLine(string.Format("DIV = {0:X2}, TMA = {1:X2}, TIMA = {2:X2}", div, tma, tima));
+			sb.AppendLine("Cycles: " + cycles + "\n");
+			return sb.ToString();
 		}
 
 		public Memory GetMemory(){

@@ -3,6 +3,38 @@ using LunaGB.Core.Debug;
 
 namespace LunaGB.Core
 {
+
+	//Represents an object in OAM.
+	public struct ObjectAttributes{
+		public byte x;
+		public byte y;
+		public byte tileIndex;
+		public byte flags;
+		public int id;
+
+		public ObjectAttributes(){
+			x = 0;
+			y = 0;
+			tileIndex = 0;
+			flags = 0;
+			id = 0;
+		}
+
+		/*
+		Flags:
+		bits 0-2: cgb palette (gbc only)
+		bit 3: vram bank (gbc only)
+		bit 4: dmg palette (gb only)
+		bit 5: x flip
+		bit 6: y flip
+		bit 7: priority
+		*/
+		public int palette => (flags >> 4) & 1;
+		public bool xFlip => ((flags >> 5) & 1) == 1 ? true : false;
+		public bool yFlip => ((flags >> 6) & 1) == 1 ? true : false;
+		public int priority => (flags >> 7) & 1;
+	}
+
 	public class Memory
 	{
 		/*
@@ -25,7 +57,7 @@ namespace LunaGB.Core
 		//FF00-FF7F: i/o registers, FF80-FFFE: hram, FFFF: interrupt flag (ie)
 		public byte[] hram = new byte[0x100]; //0xFF00-FFFF
 		public byte[] wram = new byte[0x2000]; //0xC000-DFFF
-		public byte[] oam = new byte[0xA0]; //0xFE00-FE9F
+		public ObjectAttributes[] oam = new ObjectAttributes[40]; //0xFE00-FE9F
 
 		public ROM rom;
 		public Debugger debugger;
@@ -35,9 +67,9 @@ namespace LunaGB.Core
 		public event MemoryReadWriteEvent OnMemoryRead;
 		public event MemoryReadWriteEvent OnMemoryWrite;
 		public delegate void LCDEnableEvent(bool state);
-		public event LCDEnableEvent OnLCDEnableChange;
+		public event LCDEnableEvent? OnLCDEnableChange;
 		public delegate void MemoryErrorEvent();
-		public event MemoryErrorEvent OnMemoryError;
+		public event MemoryErrorEvent? OnMemoryError;
 
 
 		public bool canAccessOAM = false;
@@ -64,12 +96,12 @@ namespace LunaGB.Core
 			for(int i = 0; i < 0x2000; i++){
 				wram[i] = 0;
 			}
-			for(int i = 0; i < 0xA0; i++){
-				oam[i] = 0;
+			for(int i = 0; i < 40; i++){
+				oam[i] = new ObjectAttributes();
 			}
 
-			//Init the JOYP register (00111111)
-			hram[(int)IORegister.P1] = 0b00111111;
+			//Init the JOYP register
+			hram[(int)IORegister.P1] = 0xFF;
 			//Init the LCDC register
 			SetHRAMBit((int)IORegister.LCDC, 7, 1);
 			//Init the SB register (all 1s for now)
@@ -138,7 +170,7 @@ namespace LunaGB.Core
 				//OAM
 				//FE00-FE9F
 				if(canAccessOAM && !doingDMATransfer){
-					return oam[address - 0xFE00];
+					return ReadFromOAM(address - 0xFE00);
 				}else{
 					return 0xFF; //If OAM can't be accessed right now (during OAM DMA/PPU modes 2/3), return 0xFF?
 				}
@@ -198,7 +230,7 @@ namespace LunaGB.Core
 			}else if(address < 0xC000){
 				//Cartridge RAM Bank
 				//A000-BFFF
-				//throw new NotImplementedException("Tried to write to cartridge ram, which isn't implemented yet");
+				rom.romMapper.SetByte(address, b);
 			}else if(address < 0xD000){
 				//wram bank slot 0 (wram bank 0)
 				//C000-CFFF
@@ -222,7 +254,7 @@ namespace LunaGB.Core
 				//FE00-FE9F
 				//Only allow OAM to be written to if it's accessible (vblank/hblank, not in middle of oam dma)
 				if(canAccessOAM && !doingDMATransfer){
-					oam[address - 0xFE00] = b;
+					WriteToOAM(address - 0xFE00, b);
 				}
 			}else if(address < 0xFF00){
 				//unusable space
@@ -289,7 +321,7 @@ namespace LunaGB.Core
 				int curLcdEnableValue = GetHRAMBit(7,(int)IORegister.LCDC);
 				//If the lcd enable flag was changed, notify the emulator
 				if(newLcdEnableValue != curLcdEnableValue){
-					OnLCDEnableChange(newLcdEnableValue == 1 ? true : false);
+					OnLCDEnableChange?.Invoke(newLcdEnableValue == 1 ? true : false);
 				}
 				hram[index] = val;
 				break;
@@ -304,9 +336,34 @@ namespace LunaGB.Core
 
 		//Performs a step for OAM DMA.
 		public void OAMDMAStep(){
-			oam[dmaTransferIndex] = GetByte(dmaTransferSourceAddress + dmaTransferIndex);
+			WriteToOAM(dmaTransferIndex, GetByte(dmaTransferSourceAddress + dmaTransferIndex));
 			dmaTransferIndex++;
 			if(dmaTransferIndex == 160) doingDMATransfer = false;
+		}
+
+		//Helper functions to read/write values to/from the object array used for oam.
+		byte ReadFromOAM(int offset){
+			int byteIndex = offset % 4;
+			int objectIndex = offset/4;
+
+			if(byteIndex == 0) return oam[objectIndex].y;
+			else if(byteIndex == 1) return oam[objectIndex].x;
+			else if(byteIndex == 2) return oam[objectIndex].tileIndex;
+			else return oam[objectIndex].flags;
+		}
+
+		void WriteToOAM(int offset, byte val){
+			int byteIndex = offset % 4;
+			int objectIndex = offset/4;
+			
+			if(byteIndex == 0) oam[objectIndex].y = val;
+			else if(byteIndex == 1) oam[objectIndex].x = val;
+			else if(byteIndex == 2) oam[objectIndex].tileIndex = val;
+			else oam[objectIndex].flags = val;
+		}
+
+		public void RequestInterrupt(Interrupt interrupt){
+			SetHRAMBit((int)IORegister.IF, (int)interrupt, 1);
 		}
 
 		public void ResetDIV(){

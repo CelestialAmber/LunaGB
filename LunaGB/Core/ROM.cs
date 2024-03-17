@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using LunaGB.Core.ROMMappers;
 
 namespace LunaGB.Core
@@ -12,8 +13,8 @@ namespace LunaGB.Core
 		MBC1RamBattery = 0x3,
 		MBC2 = 0x5,
 		MBC2Battery = 0x6,
-		RomRam = 0x8,
-		RomRamBattery = 0x9,
+		RomRam = 0x8, //unused
+		RomRamBattery = 0x9, //unused
 		MMM01 = 0xB,
 		MMM01Ram = 0xC,
 		MMM01RamBattery = 0xD,
@@ -36,7 +37,7 @@ namespace LunaGB.Core
 		HuC1 = 0xFF
 	}
 
-	//contains all the rom header data
+	//Contains all the rom header data
 	public struct ROMHeader {
 		/*
 		0x100-0x103: entry point
@@ -127,10 +128,19 @@ namespace LunaGB.Core
 		ROMMapper mapper;
 		public bool loadedRom;
 		public bool mapperSupported;
+		public string saveFilePath = "";
+		public bool useSaveFile;
 
 
 		public void OpenROM(string path) {
+			string extension = Path.GetExtension(path);
+			if(extension != ".gb" && extension != ".gbc"){
+				Console.WriteLine("Error: not a valid Game Boy rom file. Must end with .gb or .gbc");
+				return;
+			}
+			useSaveFile = false;
 			loadedRom = false;
+			saveFilePath = Path.ChangeExtension(path, ".sav");
 			rom = File.ReadAllBytes(path);
 			ReadHeader();
 			//PrintHeaderInfo();
@@ -141,23 +151,29 @@ namespace LunaGB.Core
 			//Setup rom
 			romMapper.rom = rom;
 			romMapper.romBanks = rom.Length/0x4000; //Calculate the number of rom banks for later
-			romMapper.currentBank = 1; //The default bank in bank slot 1 is bank 1
 			
 			//Setup ram if the cartridge has any
-			if(header.ramSize != 0){
+			//If the rom uses MBC2, skip this
+			if(header.ramSize != 0 && romMapper is not MBC2){
 				//Determine how much ram in kilobytes the cartridge has
 				int headerRamSizeVal = header.ramSize;
 				int ramSizeKb = 0;
 
-				if(headerRamSizeVal == 1) ramSizeKb = 2;
+				if(headerRamSizeVal == 1){
+					/*
+					This value apparently corresponds to 2kb of ram according to unofficial sources.
+					However, this value was never actually used in any official game, so it isn't
+					supported.
+					*/
+					Console.WriteLine("Spoopy 2kb ram cartridges aren't supported ;<");
+					return;
+				}
 				else if(headerRamSizeVal == 2) ramSizeKb = 8;
 				else if(headerRamSizeVal == 3) ramSizeKb = 32;
 				else if(headerRamSizeVal == 4) ramSizeKb = 128;
 				else if(headerRamSizeVal == 5) ramSizeKb = 64;
 
-				int ramBanks = ramSizeKb == 2 ? 1 : ramSizeKb/8;
-				romMapper.ramBanks = ramBanks;
-				if(ramSizeKb == 2) romMapper.has2KBRam = true;
+				romMapper.ramBanks = ramSizeKb/8;
 				romMapper.ram = new byte[ramSizeKb*1024];
 			}
 
@@ -166,12 +182,25 @@ namespace LunaGB.Core
 
 		public void Init(){
 			romMapper.Init();
+
+			/*
+			If this rom has external ram and a battery, check for an existing save file
+			for this rom. If one exists, load it.
+			*/
+			if(romMapper.hasRam && romMapper.hasBattery){
+				if(File.Exists(saveFilePath)){
+					LoadSaveFile(saveFilePath);
+				}
+				useSaveFile = true;
+			}
 		}
 
 		//Determines which ROM mapper to use based on the cartridge type in the header
 		public void DetermineROMMapper() {
+			bool hasRam, hasBattery, hasTimer, hasRumble;
 			mapperSupported = true;
 			mapper = (ROMMapper)header.cartridgeType;
+
 			switch(mapper){
 				case ROMMapper.Basic:
 					//Basic rom (0)
@@ -181,9 +210,42 @@ namespace LunaGB.Core
 				case ROMMapper.MBC1Ram:
 				case ROMMapper.MBC1RamBattery:
 					//MBC1
-					bool hasRam = mapper == ROMMapper.MBC1Ram || mapper == ROMMapper.MBC1RamBattery;
-					bool hasBattery = mapper == ROMMapper.MBC1RamBattery;
+					hasRam = mapper == ROMMapper.MBC1Ram || mapper == ROMMapper.MBC1RamBattery;
+					hasBattery = mapper == ROMMapper.MBC1RamBattery;
 					romMapper = new MBC1(hasRam, hasBattery);
+					break;
+				case ROMMapper.MBC2:
+				case ROMMapper.MBC2Battery:
+					//MBC2
+					hasBattery = mapper == ROMMapper.MBC2Battery;
+					romMapper = new MBC2(hasBattery);
+					break;
+				case ROMMapper.MBC3:
+				case ROMMapper.MBC3Ram:
+				case ROMMapper.MBC3RamBattery:
+				case ROMMapper.MBC3TimerBattery:
+				case ROMMapper.MBC3TimerRamBattery:
+					//MBC3
+					hasRam = mapper == ROMMapper.MBC3Ram || mapper == ROMMapper.MBC3TimerRamBattery
+					|| mapper == ROMMapper.MBC3RamBattery;
+					hasBattery = mapper == ROMMapper.MBC3RamBattery || mapper == ROMMapper.MBC3TimerBattery
+					|| mapper == ROMMapper.MBC3TimerRamBattery;
+					hasTimer = mapper == ROMMapper.MBC3TimerBattery || mapper == ROMMapper.MBC3TimerRamBattery;
+					romMapper = new MBC3(hasRam, hasBattery, hasTimer);
+					break;
+				case ROMMapper.MBC5:
+				case ROMMapper.MBC5Ram:
+				case ROMMapper.MBC5RamBattery:
+				case ROMMapper.MBC5Rumble:
+				case ROMMapper.MBC5RumbleRam:
+				case ROMMapper.MBC5RumbleRamBattery:
+					//MBC5
+					hasRam = mapper == ROMMapper.MBC5Ram || mapper == ROMMapper.MBC5RamBattery
+					|| mapper == ROMMapper.MBC5RumbleRam || mapper == ROMMapper.MBC5RumbleRamBattery;
+					hasBattery = mapper == ROMMapper.MBC5RamBattery || mapper == ROMMapper.MBC5RumbleRamBattery;
+					hasRumble = mapper == ROMMapper.MBC5Rumble || mapper == ROMMapper.MBC5RumbleRam
+					|| mapper == ROMMapper.MBC5RumbleRamBattery;
+					romMapper = new MBC5(hasRam, hasBattery, hasRumble);
 					break;
 				default:
 					Console.WriteLine("Error: unsupported mapper {0}",mapper);
@@ -273,8 +335,29 @@ namespace LunaGB.Core
 			Console.WriteLine("Global Checksum: " + header.globalChecksum.ToString("X2"));
 		}
 
+		//Loads the save data from the given file into the loaded ROM's SRAM if able.
+		public void LoadSaveFile(string path){
+			if(romMapper.hasRam && romMapper.hasBattery){
+				byte[] saveData = File.ReadAllBytes(path);
+				if(romMapper.ram.Length != saveData.Length){
+					Console.WriteLine("Warning: Save file size does not match expected size for the loaded ROM.");
+				}
+				for(int i = 0; i < romMapper.ram.Length; i++){
+					romMapper.ram[i] = saveData[i];
+				}
+			}else{
+				throw new Exception("Error: Can't load save file for a ROM without SRAM.");
+			}
+		}
 
-		//TODO: This needs to changed in the future to allow for other cartridge types
+		public void UpdateSaveFile(){
+			//If SRAM has changed, update the save file.
+			if(romMapper.sramDirty){
+				File.WriteAllBytes(saveFilePath, romMapper.ram);
+				romMapper.sramDirty = false;
+			}
+		}
+
 		public byte ReadByte(int index) {
 			return rom[index];
 		}

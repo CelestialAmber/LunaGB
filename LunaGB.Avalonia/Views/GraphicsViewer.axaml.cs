@@ -18,7 +18,7 @@ namespace LunaGB.Avalonia.Views
 		Memory memory;
 		byte[] tileData = new byte[0x1800];
 		byte[] tilemapData = new byte[0x800];
-		byte[] oam = new byte[0xA0];
+		ObjectAttributes[] oam = new ObjectAttributes[0x40];
 		int[] bgPalette = new int[4];
 		int[] objPalette0 = new int[4];
 		int[] objPalette1 = new int[4];
@@ -110,7 +110,7 @@ namespace LunaGB.Avalonia.Views
 				tilemapData[i] = memory.vram[0x1800 + i];
 			}
 
-			for(int i = 0; i < 0xA0; i++){
+			for(int i = 0; i < 40; i++){
 				oam[i] = memory.oam[i];
 			}
 
@@ -182,36 +182,23 @@ namespace LunaGB.Avalonia.Views
 
 			//Draw all 40 objects
 			for(int i = 0; i < 40; i++){
-				int yPos = memory.oam[i*4];
-				int xPos = memory.oam[i*4 + 1];
+				ObjectAttributes obj = oam[i];
 
-				int tileIndex = memory.oam[i*4 + 2];
-				/*
-				Flags:
-				bits 0-2: cgb palette (gbc only)
-				bit 3: vram bank (gbc only)
-				bit 4: dmg palette (gb only)
-				bit 5: x flip
-				bit 6: y flip
-				bit 7: priority
-				*/
-				byte flags = memory.oam[i*4 + 3];
-				int palette = (flags >> 4) & 1;
-				bool xFlip = ((flags >> 5) & 1) == 1 ? true : false;
-				bool yFlip = ((flags >> 6) & 1) == 1 ? true : false;
-				int priority = (flags >> 7) & 1;
-
-				int x = xPos - 8;
-				int y = yPos - 16;
+				int tileIndex = obj.tileIndex;
+				int x = obj.x - 8;
+				int y = obj.y - 16;
+				bool xFlip = obj.xFlip;
+				bool yFlip = obj.yFlip;
+				int pal = obj.palette;
 
 				//If the object is within the bounds of the screen, draw it to the preview image
 				if(x + width >= 0 && x < 160 && y + height >= 0 && y < 144){
 					if(objectSize == 0){
-						DrawObjectTile(x,y,xFlip,yFlip,palette,tileIndex);
+						DrawObjectTile(x,y,xFlip,yFlip,pal,tileIndex);
 					}else{
 						tileIndex &= 0b11111110; //Bit 0 is ignored for 8x16 mode
-						DrawObjectTile(x,y,xFlip,yFlip,palette,yFlip ? tileIndex + 1 : tileIndex);
-						DrawObjectTile(x,y + 8,xFlip,yFlip,palette,yFlip ? tileIndex : tileIndex + 1);
+						DrawObjectTile(x,y,xFlip,yFlip,pal,yFlip ? tileIndex + 1 : tileIndex);
+						DrawObjectTile(x,y + 8,xFlip,yFlip,pal,yFlip ? tileIndex : tileIndex + 1);
 					}
 				}
 			}

@@ -113,10 +113,10 @@ namespace LunaGB.Core {
 		public bool ime;
 		public bool haltMode;
 		bool haltBug; //is the halt bug active?
-		bool debug = true;
+
 		//Event used for if the CPU encounters an error.
 		public delegate void CPUErrorEvent();
-		public event CPUErrorEvent OnCPUError;
+		public event CPUErrorEvent? OnCPUError;
 
 		public Memory memory;
 
@@ -143,15 +143,6 @@ namespace LunaGB.Core {
 			haltBug = false;
 			gbcCpuSpeed = false;
 			interruptRequested = false;
-		}
-
-		public string GetCPUStateInfo() {
-			string s = "A = " + A.ToString("X2") + ", B = " + B.ToString("X2") + ", C = " + C.ToString("X2")
-				+ ", D = " + D.ToString("X2") + ", E = " + E.ToString("X2") + ", H = " + H.ToString("X2")
-				+ ", L = " + L.ToString("X2") + "\n";
-			s += "PC = " + pc.ToString("X4") + ", SP = " + sp.ToString("X4") + "\n";
-			s += string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}", flagN, flagZ, flagC, flagH);
-			return s;
 		}
 
 		void ChangeCPUSpeed(){
@@ -1465,14 +1456,6 @@ namespace LunaGB.Core {
 			Push(pc);
 			pc = vector;
 			cycles += 16;
-		}
-
-		enum Interrupt{
-			VBlank,
-			LCD,
-			Timer,
-			Serial,
-			Joypad
 		}
 
 		bool interruptRequested = true;

@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Collections.Generic;
 using LunaGB.Graphics;
 using System.Threading;
+using System.Linq;
 
 namespace LunaGB.Core
 {
@@ -125,9 +126,6 @@ namespace LunaGB.Core
 		byte[] objPalette0 = new byte[4];
 		byte[] objPalette1 = new byte[4];
 
-		//used to store the indices of the objects selected to be drawn
-		List<int> scanlineObjIndices = new List<int>();
-
 		public PPU(Memory memory, Display display)
 		{
 			this.display = display;
@@ -150,12 +148,7 @@ namespace LunaGB.Core
 			return string.Format("LY = {0}",ly);
 		}
 
-		//TODO:
-		//-The cpu should really eventually be rewritten to just be cycle accurate
-		//so the PPU can step cycle by cycle instead.
-		//-Maybe move the PPU to its own thread?
-		//-The different PPU actions should also actually be done during the respective modes instead
-		//of faking it.
+		//TODO: Rewrite to be FIFO based/etc
 		public void Step()
 		{
 			//TODO: properly emulate PPU behavior lol
@@ -190,7 +183,7 @@ namespace LunaGB.Core
 					DrawScanline(); //Draw the current scanline
 					SetMode(PPUMode.HBlank);
 					//If the mode 0 condition was enabled and we changed to mode 0, request a stat interrupt
-					if(mode0IntSelect == 1) RequestSTATInterrupt();
+					if(mode0IntSelect == 1) RequestLCDInterrupt();
 				}
 			}
 			
@@ -211,9 +204,9 @@ namespace LunaGB.Core
 					//If ly is 144, we're at the start of vblank
 					SetMode(PPUMode.VBlank);
 					//Request a VBlank interrupt
-					RequestVBlankInterrupt();
+					memory.RequestInterrupt(Interrupt.VBlank);
 					//If the mode 1 condition was enabled and we changed to mode 1, request a stat interrupt
-					if(mode1IntSelect == 1) RequestSTATInterrupt();
+					if(mode1IntSelect == 1) RequestLCDInterrupt();
 					//Update the display
 					UpdateDisplay();
 				}else if(ly == 154){
@@ -227,7 +220,7 @@ namespace LunaGB.Core
 
 				//If the mode 2 condition is enabled and we changed to mode 2, request a stat interrupt
 				if(mode == PPUMode.OAM && mode2IntSelect == 1){
-					RequestSTATInterrupt();
+					RequestLCDInterrupt();
 				}
 
 			}
@@ -239,11 +232,12 @@ namespace LunaGB.Core
 
 			//If the lyc condition is enabled and ly == lyc, request a stat interrupt
 			if(lycFlag == 1 && lycIntSelect == 1){
-				RequestSTATInterrupt();
+				RequestLCDInterrupt();
 			}
 
 			//If none of the conditions for a stat irq are met, disable stat irq blocking
-			if(!(mode0IntSelect == 1 && mode == PPUMode.HBlank) && !(mode1IntSelect == 1 && mode == PPUMode.VBlank) && !(mode2IntSelect == 1 && mode == PPUMode.OAM) && !(lycIntSelect == 1 && lycFlag == 1)){
+			if(!(mode0IntSelect == 1 && mode == PPUMode.HBlank) && !(mode1IntSelect == 1 && mode == PPUMode.VBlank)
+			&& !(mode2IntSelect == 1 && mode == PPUMode.OAM) && !(lycIntSelect == 1 && lycFlag == 1)){
 				blockStatIrqs = false;
 			}
 
@@ -270,36 +264,46 @@ namespace LunaGB.Core
 		}
 
 
-		/* TODO: on gb, the indices should be sorted by x position from right to left to correctly
-		emulate priority. */
+		List<ObjectAttributes> scanlineObjects = new List<ObjectAttributes>();
+
+		/*
+		Scans through OAM to find up to 10 objects to render on the current scanline,
+		and sorts them based on priority.
+		Priority works as follows:
+		On Game Boy only, object priority is determined first by x position, with the leftmost objects
+		having highest priority, and then by OAM order.
+		On Game Boy Color, priority is determined solely by OAM order.
+		*/
 		void OAMScan(){
 			int height = objSize == 0 ? 8 : 16;
 
-			scanlineObjIndices.Clear(); //Clear the object list
+			scanlineObjects.Clear();
 
 			//Loop through each OAM entry, and find up to 10 objects which are
 			//on the current scanline, regardless of whether they're on screen or not.
-			for(int i = 0; i < 40; i++){
-				int yPos = memory.oam[i*4] - 16;
+			foreach(ObjectAttributes obj in memory.oam){
+				int yPos = obj.y - 16;
 
 				//If the object is on the scanline, add it to the list.
 				if(ly >= yPos && ly < yPos + height){
-					scanlineObjIndices.Add(i);
+					scanlineObjects.Add(obj);
 				}
 
-				//If we now have chosen 10 objects, return
-				if(scanlineObjIndices.Count == 10) return;
+				//If we now have chosen 10 objects, exit the loop
+				if(scanlineObjects.Count == 10) break;
 			}
+
+			/*
+			If on Game Boy, we need to sort the array by x position while maintaining
+			OAM order. Array.Sort isn't a stable sort, so Enumrable.OrderBy is used instead.
+			*/
+			scanlineObjects = scanlineObjects.OrderBy(obj => obj.x).ToList();
 		}
 
-		void RequestVBlankInterrupt(){
-			memory.SetHRAMBit((int)IORegister.IF, 0, 1);
-		}
-
-		void RequestSTATInterrupt(){
+		void RequestLCDInterrupt(){
 			if(!blockStatIrqs){
 				blockStatIrqs = true;
-				memory.SetHRAMBit((int)IORegister.IF, 1, 1);
+				memory.RequestInterrupt(Interrupt.LCD);
 			}
 		}
 
@@ -334,181 +338,131 @@ namespace LunaGB.Core
 
 		}
 
+		int currentPixelBGPaletteIndex; //used to keep track of the current pixel's bg palette index
+
 		//Draws the current scanline.
 		void DrawScanline(){
 			//Update the palettes from the current palette register values (BGP, OBP0, OBP1)
 			UpdateGBPaletteArrays();
-			//Check if the bg/window enable flag is enabled
-			if(bgWindowEnablePriority == 1){
-				//If so, draw the background
-				DrawBackground();
-				//If the window enable flag is also enabled, draw the window
-				if(windowEnable == 1){
-					DrawWindow();
-				}
-			}
-			//Draw all objects on this scanline if objects are enabled
-			if(objEnable == 1){
-				DrawObjects();
-			}
-			//display.Update(pixels);
-			//display.Render();
-			//Thread.Sleep(1);
-		}
 
-		void DrawBackground(){
 			byte bgp = BGP;
 			int tileDataArea = bgWindowTileDataArea;
-			int tilemapArea = bgTilemapArea;
-			int tileDataStartAddress = tileDataArea == 1 ? 0x8000 : 0x9000;
-			int tilemapStartAddress = tilemapArea == 0 ? 0x9800 : 0x9C00;
+			int tempBgTilemapArea = bgTilemapArea;
+			int tempWindowTilemapArea = windowTilemapArea;
 
 			int scrollX = memory.GetIOReg(IORegister.SCX);
 			int scrollY = memory.GetIOReg(IORegister.SCY);
+			int windowX = WX - 7;
+			int windowY = WY;
+			int windowStartX = windowX >= 0 ? windowX : 0;
+			bool windowVisible = WY_latch && windowX < 160;
 
 			for(int x = 0; x < 160; x++){
 				int y = ly;
-				int tilemapPixelXPos = (x + scrollX) % 256;
-				int tilemapPixelYPos = (y + scrollY) % 256;
-				int tileX = tilemapPixelXPos/8;
-				int tileY = tilemapPixelYPos/8;
-				int tilePixelXPos = tilemapPixelXPos % 8;
-				int tilePixelYPos = tilemapPixelYPos % 8;
-				int tilemapByteIndex = tileY*32 + tileX;
-				int tileIndex = memory.vram[tilemapStartAddress + tilemapByteIndex - 0x8000];
-				//If the tile data area is 0, the tile index is a signed byte (-128,127)
-				if(tileDataArea == 0) tileIndex = (sbyte)tileIndex;
+				currentPixelBGPaletteIndex = 0;
+				//Check if the bg/window are enabled
+				if(bgWindowEnablePriority == 1){
+					//If so, draw the background for the current pixel
+					int tilemapPixelXPos = (x + scrollX) % 256;
+					int tilemapPixelYPos = (y + scrollY) % 256;
+					DrawBGWindowTilePixel(x, y, tilemapPixelXPos, tilemapPixelYPos, tempBgTilemapArea, tileDataArea);
 
-				int tileAddress = tileDataStartAddress + tileIndex*16;
+					//If the window is enabled/visible and appears on this pixel, draw it
+					if(windowEnable == 1 && windowVisible && x >= windowStartX){
+						tilemapPixelXPos = x - windowX;
+						tilemapPixelYPos = windowLine;
+						DrawBGWindowTilePixel(x, y, tilemapPixelXPos, tilemapPixelYPos, tempWindowTilemapArea, tileDataArea);
+					}
+				}
 
-				byte loByte = memory.vram[tileAddress + tilePixelYPos*2 - 0x8000];
-				byte hiByte = memory.vram[tileAddress + tilePixelYPos*2 + 1 - 0x8000];
-				int lo = (loByte >> (7-tilePixelXPos)) & 1;
-				int hi = (hiByte >> (7-tilePixelXPos)) & 1;
-				int palIndex = lo + (hi << 1);
-				pixels[x,y] = bgPalette[palIndex];
-			}
-		}
-
-		void DrawWindow(){
-			byte bgp = BGP;
-			int tileDataArea = bgWindowTileDataArea;
-			int tilemapArea = windowTilemapArea;
-			int tileDataStartAddress = tileDataArea == 1 ? 0x8000 : 0x9000;
-			int tilemapStartAddress = tilemapArea == 0 ? 0x9800 : 0x9C00;
-			int windowX = WX - 7;
-			int windowY = WY;
-
-			if(WY_latch && windowX < 160){
-				int startX = windowX >= 0 ? windowX : 0;
-
-				for(int x = startX; x < 160; x++){
-					int y = windowLine;
-					int tilemapPixelXPos = x - windowX;
-					int tilemapPixelYPos = windowLine;
-					int tileX = tilemapPixelXPos/8;
-					int tileY = tilemapPixelYPos/8;
-					int tilePixelXPos = tilemapPixelXPos % 8;
-					int tilePixelYPos = tilemapPixelYPos % 8;
-					int tilemapByteIndex = tileY*32 + tileX;
-					int tileIndex = memory.vram[tilemapStartAddress + tilemapByteIndex - 0x8000];
-					//If the tile data area is 0, the tile index is a signed byte (-128,127)
-					if(tileDataArea == 0) tileIndex = (sbyte)tileIndex;
-
-					int tileAddress = tileDataStartAddress + tileIndex*16;
-
-					byte loByte = memory.vram[tileAddress + tilePixelYPos*2 - 0x8000];
-					byte hiByte = memory.vram[tileAddress + tilePixelYPos*2 + 1 - 0x8000];
-					int lo = (loByte >> (7-tilePixelXPos)) & 1;
-					int hi = (hiByte >> (7-tilePixelXPos)) & 1;
-					int palIndex = lo + (hi << 1);
-					pixels[x,ly] = bgPalette[palIndex];
+				if(objEnable == 1){
+					DrawObjectPixel(x,y);
 				}
 			}
 		}
 
-		/* Loops through each object selected to be drawn on the current scanline,
-		and draws all visible ones. */
-		void DrawObjects(){
+		void DrawBGWindowTilePixel(int x, int y, int tilemapX, int tilemapY, int tilemapArea, int tileDataArea){
+			int tilemapStartAddress = tilemapArea == 0 ? 0x9800 : 0x9C00;
+			int tileDataStartAddress = tileDataArea == 1 ? 0x8000 : 0x9000;
+			int tileX = tilemapX/8;
+			int tileY = tilemapY/8;
+			int tilePixelXPos = tilemapX % 8;
+			int tilePixelYPos = tilemapY % 8;
+			int tilemapByteIndex = tileY*32 + tileX;
+			int tileIndex = memory.vram[tilemapStartAddress + tilemapByteIndex - 0x8000];
+			//If the tile data area is 0, the tile index is a signed byte (-128,127)
+			if(tileDataArea == 0) tileIndex = (sbyte)tileIndex;
+
+			int tileAddress = tileDataStartAddress + tileIndex*16;
+
+			byte loByte = memory.vram[tileAddress + tilePixelYPos*2 - 0x8000];
+			byte hiByte = memory.vram[tileAddress + tilePixelYPos*2 + 1 - 0x8000];
+			int lo = (loByte >> (7-tilePixelXPos)) & 1;
+			int hi = (hiByte >> (7-tilePixelXPos)) & 1;
+			int palIndex = lo + (hi << 1);
+			pixels[x,y] = bgPalette[palIndex];
+			currentPixelBGPaletteIndex = palIndex;
+		}
+
+		void DrawObjectPixel(int x, int y){
 			byte lcdc = memory.GetIOReg(IORegister.LCDC);
 			int size = objSize;
 
-			for(int i = 0; i < scanlineObjIndices.Count; i++){
-				int objIndex = scanlineObjIndices[i];
-				int yPos = memory.oam[objIndex*4];
-				int xPos = memory.oam[objIndex*4 + 1];
+			//Iterate through the objects from highest to lowest priority and choose the first
+			//object that appears on this pixel.
+			for(int i = 0; i < scanlineObjects.Count; i++){
+				ObjectAttributes obj = scanlineObjects[i];
+				int tileIndex = obj.tileIndex;
+				int screenX = obj.x - 8;
+				int screenY = obj.y - 16;
+				int width = 8;
+				int height = size == 0 ? 8 : 16;
 
-				int tileIndex = memory.oam[objIndex*4 + 2];
-				/*
-				Flags:
-				bits 0-2: cgb palette (gbc only)
-				bit 3: vram bank (gbc only)
-				bit 4: dmg palette (gb only)
-				bit 5: x flip
-				bit 6: y flip
-				bit 7: priority
-				*/
-				byte flags = memory.oam[objIndex*4 + 3];
-				int palette = (flags >> 4) & 1;
-				bool xFlip = ((flags >> 5) & 1) == 1 ? true : false;
-				bool yFlip = ((flags >> 6) & 1) == 1 ? true : false;
-				int priority = (flags >> 7) & 1;
-				
-				//Only render the object if part of it will show up on screen
-				if(xPos > 0 && xPos < 168){
-					int screenX = xPos - 8;
-					int screenY = yPos - 16;
-					//Next, determine which line of the object
-					//should be rendered.
-					int height = size == 0 ? 8 : 16;
-					int lineToRender = 0;
+				//If this object appears on this pixel, draw it for this pixel.
+				if(x >= screenX && x < screenX + width){
+					//Calculate which pixel from which tile needs to be drawn.
+					int tileX = x - screenX;
+					int tileY = 0;
+
+					if(obj.xFlip) tileX = 7 - tileX;
 
 					if(size == 0){
-						lineToRender = ly - screenY;
-						if(yFlip) lineToRender = 7 - lineToRender;
+						tileY = y - screenY;
+						if(obj.yFlip) tileY = 7 - tileY;
 					}else if(size == 1){
 						//For 8x16 sprite mode, bit 0 of the tile index is ignored.
 						tileIndex &= 0b11111110;
 						//If the sprite mode is 8x16, check whether a line from the top or bottom half should be rendered.
-						lineToRender = ly - screenY;
-						if(yFlip) lineToRender = 15 - lineToRender;
+						tileY = y - screenY;
+						if(obj.yFlip) tileY = 15 - tileY;
 						//If the bottom half is on the scanline, increment the tile index.
-						if(lineToRender >= 8){
+						if(tileY >= 8){
 							tileIndex++;
-							lineToRender %= 8;
+							tileY %= 8;
 						}
 					}
 
-					DrawObjectLine(screenX, lineToRender, xFlip, priority, palette, tileIndex);
-				}
-			}
-		}
+					//Draw the pixel.
+					int tileAddress = tileIndex*16;
 
+					byte loByte = memory.vram[tileAddress + tileY*2];
+					byte hiByte = memory.vram[tileAddress + tileY*2 + 1];
 
-		void DrawObjectLine(int xPos, int y, bool xFlip, int priority, int palette, int tileIndex){
-			int tileAddress = tileIndex*16;
+					int lo = (loByte >> (7-tileX)) & 1;
+					int hi = (hiByte >> (7-tileX)) & 1;
+					int palIndex = lo + (hi << 1);
 
-			byte loByte = memory.vram[tileAddress + y*2];
-			byte hiByte = memory.vram[tileAddress + y*2 + 1];
-			for(int x = 0; x < 8; x++){
-				int lo = (loByte >> (7-x)) & 1;
-				int hi = (hiByte >> (7-x)) & 1;
-				int palIndex = lo + (hi << 1);
+					//If the pixel has a palette index of 0 (transparent), don't draw it
+					if(palIndex == 0) continue;
 
-				//If the object's priority flag is 1 and this pixel's color index isn't 0,
-				//don't render it
-				if(palIndex == 0) continue;
+					byte color = obj.palette == 0 ? objPalette0[palIndex] : objPalette1[palIndex];
 
-				byte color = palette == 0 ? objPalette0[palIndex] : objPalette1[palIndex];
-
-				int pixelX = xPos + (xFlip ? 7-x : x);
-				int pixelY = ly;
-				//Only render the current pixel if it is within the screen
-				if(pixelX >= 0 && pixelX < 160){
 					//If the object's priority is 1, and the bg/window pixel color isn't 0,
 					//don't render this pixel
-					if(priority == 1 && pixels[pixelX, pixelY] != 0) continue;
-					pixels[pixelX,pixelY] = color;
+					if(obj.priority == 1 && currentPixelBGPaletteIndex != 0) break;
+					pixels[x,y] = color;
+				
+					break;
 				}
 			}
 		}

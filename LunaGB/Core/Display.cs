@@ -10,7 +10,7 @@ public class Display
 	public bool enabled = true;
 
 	public delegate void OnRenderEvent();
-	public event OnRenderEvent OnRender;
+	public event OnRenderEvent? OnRender;
 
 	public Display(){
 		display = new LunaImage(160,144);

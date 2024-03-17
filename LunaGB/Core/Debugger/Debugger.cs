@@ -22,7 +22,7 @@ namespace LunaGB.Core.Debug
 		public void InitBreakpoints()
 		{
 			breakpoints.Clear();
-			breakpoints.Add(new Breakpoint(0x40, false, false, true));
+			breakpoints.Add(new Breakpoint(0xC2B5, false, false, true));
 			breakpoints[0].enabled = true;
 		}
 

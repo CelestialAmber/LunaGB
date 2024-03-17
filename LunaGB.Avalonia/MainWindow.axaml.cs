@@ -1,19 +1,21 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.Interactivity;
 using System;
 using System.Threading;
-using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
 using LunaGB.Core;
 using LunaGB.Graphics;
 using LunaGB.Core.Debug;
 using LunaGB.Avalonia.Views;
+using System.Timers;
+using Avalonia.Platform.Storage;
+using LunaGB.Avalonia.Utils;
+using System.Linq;
 
 namespace LunaGB.Avalonia {
 	public partial class MainWindow : Window {
@@ -22,21 +24,10 @@ namespace LunaGB.Avalonia {
 		Debugger debugger;
 		CancellationTokenSource cToken;
 		Thread emuThread;
-
 		MemoryViewer mv;
 		GraphicsViewer graphicsViewer;
+		System.Timers.Timer updateFPSTimer;
 
-		//Keyboard button map
-		public static Dictionary<Key,Input.Button> buttonKeys = new Dictionary<Key,Input.Button>{
-			{ Key.I,Input.Button.Up },
-			{ Key.K,Input.Button.Down },
-			{ Key.J,Input.Button.Left },
-			{ Key.L,Input.Button.Right },
-			{ Key.X,Input.Button.Select },
-			{ Key.C,Input.Button.Start },
-			{ Key.S,Input.Button.B },
-			{ Key.A,Input.Button.A },
-		};
 
 		public MainWindow() {
 			InitializeComponent();
@@ -47,7 +38,8 @@ namespace LunaGB.Avalonia {
 			debugger.OnHitBreakpoint += OnHitBreakpoint;
 			cToken = new CancellationTokenSource();
 			emulator.display.OnRender += RenderFrame;
-
+			displayView.AddHandler(DragDrop.DropEvent, OnDragDropFile);
+			InitUpdateFPSTimer();
 			DrawStartupImage();
 		}
 
@@ -58,7 +50,13 @@ namespace LunaGB.Avalonia {
 			}
 		}
 
-		public void DrawStartupImage(){
+		void InitUpdateFPSTimer(){
+			updateFPSTimer = new System.Timers.Timer(1000);
+			updateFPSTimer.Elapsed += OnUpdateFPSTimerElapsed;
+			updateFPSTimer.AutoReset = true;
+		}
+
+		void DrawStartupImage(){
 			LunaImage bitmap = emulator.GetScreenBitmap();
 			for (int x = 0; x < 160; x++) {
 				for (int y = 0; y < 144; y++) {
@@ -67,53 +65,73 @@ namespace LunaGB.Avalonia {
 					}
 				}
 			}
-			
-			UpdateDisplay(bitmap.ToByteArray());
+
+			displayView.UpdateDisplay(bitmap);
 		}
 
 		//Called by the emulator thread to render the game screen on the window
 		public void RenderFrame(){
-			Dispatcher.UIThread.Post(() => UpdateDisplay(emulator.GetScreenBitmap().ToByteArray()));
+			Dispatcher.UIThread.Post(() => displayView.UpdateDisplay(emulator.GetScreenBitmap()));
 		}
 
-		public void UpdateDisplay(byte[] data) {
-			ImageBox.Source = new Bitmap(new MemoryStream(data));
+		private void OnUpdateFPSTimerElapsed(object? source, ElapsedEventArgs e){
+			if(emulator.isRunning) UpdateFPSText();
 		}
 
-		private async void LoadROM(object sender, RoutedEventArgs e) {
-			if (emulator.isRunning)
-			{
+		void UpdateFPSText(){
+			Dispatcher.UIThread.Post(() => displayView.UpdateFPSText(emulator.currentFPS));
+		}
+
+		public void OnDragDropFile(object? sender, DragEventArgs e){
+			if (emulator.isRunning){
 				emulator.isRunning = false;
 				StopEmulation();
 			}
 
 			cToken = new CancellationTokenSource();
 
-			//TODO: update this
-			OpenFileDialog dialog = new OpenFileDialog();
-			dialog.Filters = new List<FileDialogFilter>();
-			dialog.Title = "Open ROM file";
-			FileDialogFilter gbFilter = new FileDialogFilter();
-			gbFilter.Name = "GB/GBC";
-			gbFilter.Extensions = new List<string>(new string[] { "gb", "gbc" });
-			dialog.Filters.Add(gbFilter);
+			IEnumerable<IStorageItem>? items = e.Data.GetFiles();
+			if(items != null){
+				IStorageItem fileItem = items.ToList()[0];
+				string filename = fileItem.ConvertPathToString();
+				LoadROM(filename);
+			}else{
+				Console.WriteLine("Dropped folder/url?");
+			}
+        }
 
-			 var result = await dialog.ShowAsync(this);
+		private async void OnClickLoadROMButton(object sender, RoutedEventArgs e) {
+			if (emulator.isRunning){
+				emulator.isRunning = false;
+				StopEmulation();
+			}
 
+			cToken = new CancellationTokenSource();
 
-			if (result != null && result.Length != 0) {
-				 string filename = result[0];
-				 if (filename != null) {
-					 string romName = filename;
-					 Console.WriteLine("Loading \"" + romName + "\"");
-					 emulator.LoadROM(romName);
-					//If the ROM successfully loaded, start the emulator
-					if(emulator.loadedRom) {
-						emuThread = new Thread(() => emulator.Start(cToken.Token));
-						emuThread.Start();
-					}
-				 }
+			FilePickerOpenOptions options = new FilePickerOpenOptions();
+			options.Title = "Open ROM file";
+			options.AllowMultiple = false;
+
+			var files = await this.StorageProvider.OpenFilePickerAsync(options);
+
+			if (files.Count != 0) {
+				string filename = files[0].ConvertPathToString();
+				if (filename != null) {
+					LoadROM(filename);
+				}
 			 }
+		}
+
+		void LoadROM(string filename){
+			string romName = filename;
+			Console.WriteLine("Loading \"" + romName + "\"");
+			emulator.LoadROM(romName);
+			//If the ROM successfully loaded, start the emulator
+			if(emulator.loadedRom) {
+				emuThread = new Thread(() => emulator.Start(cToken.Token));
+				emuThread.Start();
+				updateFPSTimer.Enabled = true;
+			}
 		}
 
 
@@ -211,6 +229,7 @@ namespace LunaGB.Avalonia {
 		public void StopEmulation() {
 			emulator.Stop();
 			cToken.Cancel();
+			updateFPSTimer.Enabled = false;
 			Console.WriteLine("Emulation stopped");
 			DrawStartupImage();
 		}
@@ -236,8 +255,8 @@ namespace LunaGB.Avalonia {
 
 
 		private void OnKeyDown(object? sender, KeyEventArgs e) {
-			if(buttonKeys.ContainsKey(e.Key)){
-				Input.OnButtonDown(buttonKeys[e.Key]);
+			if(Config.buttonKeys.ContainsKey(e.Key)){
+				Input.OnButtonDown(Config.buttonKeys[e.Key]);
 			}
 
 			//Step
@@ -268,8 +287,8 @@ namespace LunaGB.Avalonia {
 		}
 
 		private void OnKeyUp(object? sender, KeyEventArgs e) {
-			if(buttonKeys.ContainsKey(e.Key)) {
-				Input.OnButtonUp(buttonKeys[e.Key]);
+			if(Config.buttonKeys.ContainsKey(e.Key)) {
+				Input.OnButtonUp(Config.buttonKeys[e.Key]);
 			}
 		}
 

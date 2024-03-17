@@ -6,6 +6,9 @@ namespace LunaGB.Core.ROMMappers
     public class BasicCartridge : Cartridge
     {
 
+		public override void Init(){
+		}
+
 		public override byte GetByte(int index) {
             //The basic rom mapper doesn't support bank switching, so we can directly use the index
 
@@ -19,7 +22,6 @@ namespace LunaGB.Core.ROMMappers
         }
 
         public override void SetByte(int index, byte val) {
-           // throw new Exception("Trying to write to ROM");
         }
     }
 }
