@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.AccessControl;
 using LunaGB.Core.Debug;
 
 namespace LunaGB.Core {
@@ -16,51 +17,34 @@ namespace LunaGB.Core {
 		Z N H C 0 0 0 0
 		7 6 5 4 3 2 1 0
 		*/
-
 		public int flagZ {
-			get{
-			return GetFlag(3);
-			}
-			set{
-			SetFlag(3, value);
-			}
+			get{ return GetFlag(3); }
+			set{ SetFlag(3, value); }
 		}
 
 		public int flagN {
-			get{
-			return GetFlag(2);
-			}
-			set{
-			SetFlag(2, value);
-			}
+			get{ return GetFlag(2); }
+			set{ SetFlag(2, value); }
 		}
 
 		public int flagH {
-			get{
-			return GetFlag(1);
-			}
-			set{
-			SetFlag(1, value);
-			}
+			get{ return GetFlag(1); }
+			set{ SetFlag(1, value); }
 		}
 
 		public int flagC {
-			get{
-			return GetFlag(0);
-			}
-			set{
-			SetFlag(0, value);
-			}
+			get{ return GetFlag(0); }
+			set{ SetFlag(0, value); }
 		}
 
 		//Register pairs
 		public ushort AF {
 			get{
-			return (ushort)((A << 8) + F);
+				return (ushort)((A << 8) + F);
 			}
 			set {
-			A = (byte)(value >> 8);
-			F = (byte)(value & 0xF0); //only the top 4 bits are writeable
+				A = (byte)(value >> 8);
+				F = (byte)(value & 0xF0); //only the top 4 bits are writeable
 			}
 		}
 
@@ -69,41 +53,35 @@ namespace LunaGB.Core {
 				return (ushort)((B << 8) + C);
 			}
 			set{
-			B = (byte)(value >> 8);
-			C = (byte)value;
+				B = (byte)(value >> 8);
+				C = (byte)value;
 			}
 		}
 
 		public ushort DE {
 			get{
-			return (ushort)((D << 8) + E);
+				return (ushort)((D << 8) + E);
 			}
 			set{
-			D = (byte)(value >> 8);
-			E = (byte)value;
+				D = (byte)(value >> 8);
+				E = (byte)value;
 			}
 		}
 
 		public ushort HL {
 			get{
-			return (ushort)((H << 8) + L);
+				return (ushort)((H << 8) + L);
 			}
 			set{
-			H = (byte)(value >> 8);
-			L = (byte)value;
+				H = (byte)(value >> 8);
+				L = (byte)value;
 			}
 		}
 
 		//Interrupt enable flag
-		public byte IE
-		{
-			get{
-			return memory.hram[0xFF];
-			}
-
-			set{
-			memory.hram[0xFF] = value;
-			}
+		public byte IE{
+			get{ return memory.regs.IE; }
+			set{ memory.regs.IE = value; }
 		}
 
 
@@ -113,6 +91,7 @@ namespace LunaGB.Core {
 		public bool ime;
 		public bool haltMode;
 		bool haltBug; //is the halt bug active?
+		public bool onGBC; //whether we're on gbc or not
 
 		//Event used for if the CPU encounters an error.
 		public delegate void CPUErrorEvent();
@@ -124,18 +103,12 @@ namespace LunaGB.Core {
 			this.memory = memory;
 		}
 
-		public void Init(){
-			//Set all registers to 0
-			A = 0;
-			B = 0;
-			C = 0;
-			D = 0;
-			E = 0;
-			F = 0;
-			H = 0;
-			L = 0;
-			sp = 0xFFFE;
-			pc = 0x100; //Initialize the PC to 0x100 (entry point)
+		public void Init(bool onGBC){
+			this.onGBC = onGBC;
+
+			//Initialize registers to post bootrom values
+			InitRegisters();
+
 			//Reset other misc flags
 			ime = false;
 			haltMode = false;
@@ -143,6 +116,61 @@ namespace LunaGB.Core {
 			haltBug = false;
 			gbcCpuSpeed = false;
 			interruptRequested = false;
+		}
+
+		/*
+		Initializes the CPU registers to the correct post bootrom values based
+		on the system.
+
+		Initial register values (because Nintendo is annoying ^w^):
+		
+		     DMG0   DMG    MGB     SGB    SGB2  CGB(DMG) AGB(DMG)   CGB     AGB
+		   ---------------------------------------------------------------------
+		A  |  01     01     FF     01      FF      11       11      11      11
+		B  |  FF     00     00     00      00      *1       *1      00      01
+		C  |  13     13     13     14      14      00       00      00      00
+		D  |  00     00     00     00      00      00       00      FF      FF
+		E  |  C1     D8     D8     00      00      08       08      56      56
+		H  |  84     01     01     C0      C0      *2       *2      00      00
+		L  |  03     4D     4D     60      60      *2       *2      0D      0D
+
+		Flags:
+		DMG0/SGB/SGB2/AGB: Z=0, N=0, H=0, C=0
+		DMG/MGB: Z=1, N=0 (H/C: *3)
+		CGB: Z=1, N=0, H=0, C=0
+		AGB (DMG): N=0, C=0 (Z/H: *4)
+
+		Notes:
+		1)On CGB/AGB, if the old licensee code is 01 or the old licensee code
+			is 33 and the new licensee code is "01", B is the sum of all 16
+			title bytes. Otherwise, it's 00. On AGB only, B is then increased by
+		2)On CGB/AGB, in DMG mode, HL is 0x991A if B = 0x43 or 0x58 (+1 on AGB).
+			Otherwise HL is 0x007C.
+		3)If the header checksum is 0x00, C/H are 0, otherwise they are 1.
+		4)Run an inc instruction on b and update flags accordingly. The N/C flags aren't touched.
+		*/
+		void InitRegisters(){
+			//TODO: For now, just assume DMG values (maybe use a switch case or smth to handle different systems)
+			A = 0x01;
+			B = 0x00;
+			C = 0x13;
+			D = 0x00;
+			E = 0xD8;
+			H = 0x01;
+			L = 0x4D;
+			flagZ = 1;
+			flagN = 0;
+			//This is so stupid
+			if(memory.rom.header.headerChecksum == 0){
+				flagC = 0;
+				flagH = 0;
+			}else{
+				flagC = 1;
+				flagH = 1;
+			}
+
+			sp = 0xFFFE;
+			pc = 0x100; //Initialize the PC to 0x100 (entry point)
 		}
 
 		void ChangeCPUSpeed(){
@@ -188,48 +216,32 @@ namespace LunaGB.Core {
 						}else if(opcode == 0x10){
 							//stop
 							//here be dragons
-							bool buttonHeld = Input.flags.Contains(0); //Check the button state array to check for if any buttons are being held
+							byte JOYP = memory.GetIOReg(IORegister.P1);
+							bool buttonHeld = (JOYP & 0b1111) != 0b1111; //Check if any buttons selected in JOYP are being held
 							bool speedSwitchRequested = false;
 							//TODO: for now, no speed switch was requested
-							if(buttonHeld){
-								if(CheckIfInterruptPending() == true){
-									//stop is 1 byte, mode doesn't change, div not reset
-								}else{
-									//stop is 2 bytes, enter halt mode, div not reset
-									pc++;
-									haltMode = true;
+							bool interruptPending = CheckIfInterruptPending();
+							
+							//Check if a speed switch was requested (only happens on gbc)
+							if(speedSwitchRequested && onGBC){
+								//If an interrupt is pending but ime is false, the cpu enters an invalid state
+								if(interruptPending && ime == false){
+									Console.WriteLine("Error: invalid stop opcode");
+									OnCPUError?.Invoke();
 								}
-							}else if(speedSwitchRequested){
-								if(CheckIfInterruptPending() == true){
-									if(ime == true){
-										//stop is 1 byte, mode doesn't change, reset div, change cpu speed
-										memory.ResetDIV();
-										ChangeCPUSpeed();
-									}else{
-										//the CPU enters a non deterministic state, throw an error
-										Console.WriteLine("Error: invalid stop opcode");
-										OnCPUError?.Invoke();
-									}
-								}else{
-									//stop is 2 bytes, enter halt mode, reset div, change cpu speed
-									pc++;
-									haltMode = true;
-									memory.ResetDIV();
-									ChangeCPUSpeed();
-
-									//TODO: halt mode exits after 0x20000 cycles unless an interrupt occurs
-								}
+								ChangeCPUSpeed();
+							}
+							
+							//If there is no interrupt pending, stop is 2 bytes, otherwise 1 byte
+							if(!interruptPending) pc++;
+							//If no button is being held, reset DIV
+							if(!buttonHeld) memory.ResetDIV();
+							//If a button was held, or a speed switch was requested, and there is no interrupt pending, enter halt mode
+							if(buttonHeld || speedSwitchRequested){
+								if(!interruptPending) haltMode = true;
 							}else{
-								if(CheckIfInterruptPending() == true){
-									//stop is 1 byte, enter stop mode, reset div
-									stopMode = true;
-									memory.ResetDIV();
-								}else{
-									//stop is 2 bytes, enter stop mode, reset div
-									pc++;
-									stopMode = true;
-									memory.ResetDIV();
-								}
+								//If no button was pressed and no interrupt is pending, enter stop mode
+								stopMode = true;
 							}
 						}else if(opcode == 0x20){
 							//jr nz,n8
@@ -1486,7 +1498,7 @@ namespace LunaGB.Core {
 			ushort address = 0;
 
 			//Reset the corresponding bit in the IF register
-			memory.SetHRAMBit((int)IORegister.IF, (int)requestedInterrupt, 0);
+			memory.regs.SetBit(ref memory.regs.IF, (int)requestedInterrupt, 0);
 			//Reset the IME flag
 			ime = false;
 			//Exit low power mode

@@ -124,7 +124,7 @@ namespace LunaGB.Avalonia.Views
 				objPalette1[i] = (byte)((obp1 >> (i*2)) & 3);
 			}
 
-			objectSize = memory.GetHRAMBit(2, (int)IORegister.LCDC);
+			objectSize = memory.regs.objSize;
 		}
 
 		public void DrawTilemap(){

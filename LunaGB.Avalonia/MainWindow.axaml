@@ -3,7 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:c="using:LunaGB.Avalonia.Controls"
-        mc:Ignorable="d" MinWidth="160" MinHeight="164" Width="640" Height="596" WindowStartupLocation="CenterScreen"
+        mc:Ignorable="d" MinWidth="160" MinHeight="184" Width="640" Height="616" WindowStartupLocation="CenterScreen"
         x:Class="LunaGB.Avalonia.MainWindow"
         Title="LunaGB"
         Icon="/Assets/icon.png"

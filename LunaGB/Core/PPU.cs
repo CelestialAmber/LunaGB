@@ -28,97 +28,8 @@ namespace LunaGB.Core
 		public int scanlineCycleCount = 0;
 		bool blockStatIrqs = false;
 		byte[,] pixels = new byte[160,144]; //used to store pixels before rendering the final image to the screen
-
-
-		//PPU registers
-
-		byte BGP {
-			get{
-				return memory.hram[(int)IORegister.BGP];
-			}
-		}
-
-		byte OBP0 {
-			get{
-				return memory.hram[(int)IORegister.OBP0];
-			}
-		}
-
-		byte OBP1 {
-			get{
-				return memory.hram[(int)IORegister.OBP1];
-			}
-		}
-
-		//LCDC flags
-
-		//BG/Window enable/priority (bit 0)
-		public int bgWindowEnablePriority {
-			get{
-				return memory.GetHRAMBit(0, (int)IORegister.LCDC);
-			}
-		}
-
-		//OBJ enable (bit 1)
-		public int objEnable {
-			get{
-				return memory.GetHRAMBit(1, (int)IORegister.LCDC);
-			}
-		}
-
-		//OBJ size (bit 2)
-		public int objSize {
-			get{
-				return memory.GetHRAMBit(2, (int)IORegister.LCDC);
-			}
-		}
-
-		//BG Tilemap Area (bit 3)
-		public int bgTilemapArea {
-			get{
-				return memory.GetHRAMBit(3, (int)IORegister.LCDC);
-			}
-		}
-
-		//BG/Window tile data area (bit 4)
-		public int bgWindowTileDataArea {
-			get{
-				return memory.GetHRAMBit(4, (int)IORegister.LCDC);
-			}
-		}
-
-		//Window enable (bit 5)
-		public int windowEnable {
-			get{
-				return memory.GetHRAMBit(5, (int)IORegister.LCDC);
-			}
-		}
-
-		//Window tilemap area (bit 6)
-		public int windowTilemapArea {
-			get{
-				return memory.GetHRAMBit(6, (int)IORegister.LCDC);
-			}
-		}
-
-		//LCD enable (bit 7)
-		public int lcdcEnable {
-			get{
-				return memory.GetHRAMBit(7, (int)IORegister.LCDC);
-			}
-		}
-
-		public int WX {
-			get{
-				return memory.GetIOReg(IORegister.WX);
-			}
-		}
-
-		public int WY {
-			get{
-				return memory.GetIOReg(IORegister.WY);
-			}
-		}
+		public bool onGBC; //whether we're on gbc or not
+		public bool finishedFrame;
 
 
 		//Arrays for storing the GB register color palettes for easier use
@@ -133,9 +44,11 @@ namespace LunaGB.Core
 			
 		}
 
-		public void Init(){
+		public void Init(bool onGBC){
+			this.onGBC = onGBC;
 			ly = 0;
 			WY_latch = false;
+			finishedFrame = false;
 			windowLine = 0;
 			scanlineCycleCount = 0;
 			SetMode(PPUMode.OAM);
@@ -167,7 +80,7 @@ namespace LunaGB.Core
 			int lycIntSelect = (stat >> 6) & 1;
 
 			//Check if WY_latch should be enabled
-			if(!WY_latch && windowEnable == 1 && ly == WY) WY_latch = true;
+			if(!WY_latch && memory.regs.windowEnable == 1 && ly == memory.regs.WY) WY_latch = true;
 
 			//If we're not in vblank, check whether we should change mode
 			if(mode != PPUMode.VBlank){
@@ -192,8 +105,8 @@ namespace LunaGB.Core
 				scanlineCycleCount %= cyclesPerScanline;
 				
 				ly++;
-				if(windowEnable == 1){
-					if(WY_latch && WX <= 166){
+				if(memory.regs.windowEnable == 1){
+					if(WY_latch && memory.regs.WX <= 166){
 						windowLine++;
 					}
 				}
@@ -213,6 +126,7 @@ namespace LunaGB.Core
 					//If ly is 154, we're at the end of vblank, reset ly to 0
 					ly = 0;
 					WY_latch = false;
+					finishedFrame = true;
 					windowLine = 0;
 					SetMode(PPUMode.OAM);
 				}
@@ -228,7 +142,7 @@ namespace LunaGB.Core
 			int lyc = memory.GetIOReg(IORegister.LYC);
 			int lycFlag = ly == lyc ? 1 : 0;
 
-			memory.SetHRAMBit((int)IORegister.STAT, 2, lycFlag);
+			memory.regs.SetBit(ref memory.regs.STAT, 2, lycFlag);
 
 			//If the lyc condition is enabled and ly == lyc, request a stat interrupt
 			if(lycFlag == 1 && lycIntSelect == 1){
@@ -249,10 +163,12 @@ namespace LunaGB.Core
 			mode = newMode;
 			int modeVal = (int)mode;
 			//Update the mode value in STAT (bits 0-1)
-			memory.SetHRAMBit((int)IORegister.STAT,0,modeVal & 1);
-			memory.SetHRAMBit((int)IORegister.STAT,0,(modeVal >> 1) & 1);
+			memory.regs.SetBit(ref memory.regs.STAT,0,modeVal & 1);
+			memory.regs.SetBit(ref memory.regs.STAT,1,(modeVal >> 1) & 1);
 
 			//Update the memory access flags depending on the new mode
+			//Disabled for now until accuracy improves
+			
 			if(newMode == PPUMode.OAM){
 				memory.canAccessOAM = false;
 			}else if(newMode == PPUMode.Drawing){
@@ -261,6 +177,7 @@ namespace LunaGB.Core
 				memory.canAccessOAM = true;
 				memory.canAccessVRAM = true;
 			}
+			
 		}
 
 
@@ -275,7 +192,7 @@ namespace LunaGB.Core
 		On Game Boy Color, priority is determined solely by OAM order.
 		*/
 		void OAMScan(){
-			int height = objSize == 0 ? 8 : 16;
+			int height = memory.regs.objSize == 0 ? 8 : 16;
 
 			scanlineObjects.Clear();
 
@@ -326,9 +243,9 @@ namespace LunaGB.Core
 		//Updates the gameboy palette arrays from the values currently stored in
 		//the 3 palette registers.
 		void UpdateGBPaletteArrays(){
-			byte bgp = BGP;
-			byte obp0 = OBP0;
-			byte obp1 = OBP1;
+			byte bgp = memory.regs.BGP;
+			byte obp0 = memory.regs.OBP0;
+			byte obp1 = memory.regs.OBP1;
 
 			for(int i = 0; i < 4; i++){
 				bgPalette[i] = (byte)((bgp >> (i*2)) & 3);
@@ -345,15 +262,15 @@ namespace LunaGB.Core
 			//Update the palettes from the current palette register values (BGP, OBP0, OBP1)
 			UpdateGBPaletteArrays();
 
-			byte bgp = BGP;
-			int tileDataArea = bgWindowTileDataArea;
-			int tempBgTilemapArea = bgTilemapArea;
-			int tempWindowTilemapArea = windowTilemapArea;
+			byte bgp = memory.regs.BGP;
+			int tileDataArea = memory.regs.bgWindowTileDataArea;
+			int tempBgTilemapArea = memory.regs.bgTilemapArea;
+			int tempWindowTilemapArea = memory.regs.windowTilemapArea;
 
 			int scrollX = memory.GetIOReg(IORegister.SCX);
 			int scrollY = memory.GetIOReg(IORegister.SCY);
-			int windowX = WX - 7;
-			int windowY = WY;
+			int windowX = memory.regs.WX - 7;
+			int windowY = memory.regs.WY;
 			int windowStartX = windowX >= 0 ? windowX : 0;
 			bool windowVisible = WY_latch && windowX < 160;
 
@@ -361,21 +278,21 @@ namespace LunaGB.Core
 				int y = ly;
 				currentPixelBGPaletteIndex = 0;
 				//Check if the bg/window are enabled
-				if(bgWindowEnablePriority == 1){
+				if(memory.regs.bgWindowEnablePriority == 1){
 					//If so, draw the background for the current pixel
 					int tilemapPixelXPos = (x + scrollX) % 256;
 					int tilemapPixelYPos = (y + scrollY) % 256;
 					DrawBGWindowTilePixel(x, y, tilemapPixelXPos, tilemapPixelYPos, tempBgTilemapArea, tileDataArea);
 
 					//If the window is enabled/visible and appears on this pixel, draw it
-					if(windowEnable == 1 && windowVisible && x >= windowStartX){
+					if(memory.regs.windowEnable == 1 && windowVisible && x >= windowStartX){
 						tilemapPixelXPos = x - windowX;
 						tilemapPixelYPos = windowLine;
 						DrawBGWindowTilePixel(x, y, tilemapPixelXPos, tilemapPixelYPos, tempWindowTilemapArea, tileDataArea);
 					}
 				}
 
-				if(objEnable == 1){
+				if(memory.regs.objEnable == 1){
 					DrawObjectPixel(x,y);
 				}
 			}
@@ -406,7 +323,7 @@ namespace LunaGB.Core
 
 		void DrawObjectPixel(int x, int y){
 			byte lcdc = memory.GetIOReg(IORegister.LCDC);
-			int size = objSize;
+			int size = memory.regs.objSize;
 
 			//Iterate through the objects from highest to lowest priority and choose the first
 			//object that appears on this pixel.

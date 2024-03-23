@@ -121,7 +121,7 @@ namespace LunaGB.Core
 
 	public class ROM
 	{
-		ROMHeader header;
+		public ROMHeader header;
 		public int currentBank; //current switchable bank number
 		public byte[] rom;
 		public Cartridge romMapper; //rom mapper class storing the rom data and handling rom mapping

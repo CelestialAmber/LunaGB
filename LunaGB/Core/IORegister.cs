@@ -11,10 +11,45 @@ namespace LunaGB.Core
 		TMA = 0x06,
 		TAC = 0x07,
 		IF = 0x0F,
-
-		//maybe also include these here?
-		//0x10-26: NR registers
-		//0x30-3F: WAV00-15
+		NR10 = 0x10,
+		NR11 = 0x11,
+		NR12 = 0x12,
+		NR13 = 0x13,
+		NR14 = 0x14,
+		//NR20?
+		NR21 = 0x16,
+		NR22 = 0x17,
+		NR23 = 0x18,
+		NR24 = 0x19,
+		NR30 = 0x1A,
+		NR31 = 0x1B,
+		NR32 = 0x1C,
+		NR33 = 0x1D,
+		NR34 = 0x1E,
+		//NR40?
+		NR41 = 0x20,
+		NR42 = 0x21,
+		NR43 = 0x22,
+		NR44 = 0x23,
+		NR50 = 0x24,
+		NR51 = 0x25,
+		NR52 = 0x26,
+		WAV00 = 0x30,
+		WAV01 = 0x31,
+		WAV02 = 0x32,
+		WAV03 = 0x33,
+		WAV04 = 0x34,
+		WAV05 = 0x35,
+		WAV06 = 0x36,
+		WAV07 = 0x37,
+		WAV08 = 0x38,
+		WAV09 = 0x39,
+		WAV10 = 0x3A,
+		WAV11 = 0x3B,
+		WAV12 = 0x3C,
+		WAV13 = 0x3D,
+		WAV14 = 0x3E,
+		WAV15 = 0x3F,
 
 		//bit 0: BG_EN, 1: OBJ_EN, 2: OBJ_SIZE, 3: BG_MAP, 4: TILE_SEL, 5: WIN_EN, 6: WIN_MAP, 7: LCD_EN
 		LCDC = 0x40,
@@ -40,11 +75,10 @@ namespace LunaGB.Core
 		BCPS = 0x68,
 		BCPD = 0x69,
 		OCPS = 0x6A,
-		OCPD = 0x6B
-		//GBC registers
-		//SVBK = 0x70,
-		//PCM12 = 0x76,
-		//PCM34 = 0x77
+		OCPD = 0x6B,
+		SVBK = 0x70,
+		PCM12 = 0x76,
+		PCM34 = 0x77
 	}
 }
 

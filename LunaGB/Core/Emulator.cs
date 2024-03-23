@@ -19,15 +19,11 @@ namespace LunaGB.Core{
 		public bool paused = false;
 		public bool loadedRom => rom.loadedRom;
 		public bool debug = false;
-		public bool doReset;
-		public bool pausedOnBreakpoint;
 		CancellationToken ctoken;
 		object emuStepLock = new object();
 
 		public const int maxCycles = 4194304; //the original gb clock speed is 4.194 mhz
-		public const int cyclesPerFrame = 70224; //~= 4194304/59.7275
 		int cycles = 0;
-		int frameCycleCount = 0;
 		int divCycleTimer = 0;
 		int timaCycleTimer = 0;
 		double msPerFrame = 0d;
@@ -36,6 +32,7 @@ namespace LunaGB.Core{
 		Stopwatch sw;
 		public float currentFPS;
 		public System.Timers.Timer updateSaveFileTimer;
+		GBSystem emulatedSystem;
 
 		public Emulator(Debug.Debugger debugger)
 		{
@@ -51,6 +48,9 @@ namespace LunaGB.Core{
 			msPerFrame = 1000d*(1d/Options.frameRate);
 			sw = new Stopwatch();
 			InitUpdateSaveFileTimer();
+			//TODO: if auto detect system is enabled, use the detected system instead
+			emulatedSystem = Options.system;
+
 			//Setup events
 			memory.OnLCDEnableChange += LCDEnableChangeCallback;
 			memory.OnMemoryError += ErrorCallback;
@@ -77,17 +77,19 @@ namespace LunaGB.Core{
 		public void Start(CancellationToken token) {
 			ctoken = token;
 			isRunning = true;
-			frameCycleCount = 0;
 			divCycleTimer = 0;
 			timaCycleTimer = 0;
 			paused = false;
 			prevJOYP = memory.GetIOReg(IORegister.P1);
 
+			//Check if we're running on GBC
+			bool onGBC = emulatedSystem == GBSystem.CGB;
+
 			//Init all of the components
 			debugger.InitBreakpoints();
 			memory.Init();
-			cpu.Init();
-			ppu.Init();
+			cpu.Init(onGBC);
+			ppu.Init(onGBC);
 			rom.Init();
 
 			//Clear the display
@@ -97,6 +99,10 @@ namespace LunaGB.Core{
 			//Start the timer for updating the rom's save file periodically if the rom uses save data.
 			if(rom.useSaveFile){
 				updateSaveFileTimer.Start();
+			}
+
+			if(Options.bootToPause){
+				paused = true;
 			}
 
 			//Start the emulator
@@ -153,9 +159,8 @@ namespace LunaGB.Core{
 				//Update the different cycle variables by the number of cycles the CPU took.
 				int cyclesTaken = cpu.cycles;
 				cycles += cyclesTaken;
-				frameCycleCount += cyclesTaken;
 
-				bool ppuActive = ppu.lcdcEnable == 1 ? true : false;
+				bool ppuActive = memory.regs.lcdcEnable == 1 ? true : false;
 
 				//Step everything else by the number of cycles the CPU took.
 				for(int i = 0; i < cyclesTaken; i++){
@@ -171,28 +176,27 @@ namespace LunaGB.Core{
 
 					//Update DIV and TIMA registers
 					UpdateDIVAndTIMA();
-				}
 
-				//Check if we've reached the end of the frame in cycles
-				if(frameCycleCount >= cyclesPerFrame){
-					CheckJOYP();
-					//Render the screen, and keep the thread waiting until we're at the end of frame in actual time.
-					if(display.enabled) display.Render();
-					frameCycleCount %= cyclesPerFrame;
-					if(Options.limitFrameRate){
-						//TODO: is there a better way to keep a thread waiting than this?
-						while(sw.Elapsed.TotalMilliseconds < msPerFrame){
-							Thread.Sleep(0);
+					//Check if we've reached the end of the frame
+					if(ppu.finishedFrame){
+						ppu.finishedFrame = false;
+						CheckJOYP();
+						//Render the screen, and keep the thread waiting until we're at the end of frame in actual time.
+						if(display.enabled) display.Render();
+						if(Options.limitFrameRate){
+							//TODO: is there a better way to keep a thread waiting than this?
+							while(sw.Elapsed.TotalMilliseconds < msPerFrame){
+								Thread.Sleep(0);
+							}
 						}
+						UpdateFPS();
+						//Once the amount of time for a single frame has passed, restart the stopwatch for the next frame.
+						sw.Restart();
 					}
-					UpdateFPS();
-					//Once the amount of time for a single frame has passed, restart the stopwatch for the next frame.
-					sw.Restart();
 				}
 
 				if (cycles >= maxCycles){
 					cycles %= maxCycles;
-					frameCycleCount = cycles;
 				}
 			}
 		}
@@ -221,24 +225,24 @@ namespace LunaGB.Core{
 		int[] tacClockIncrementFrequencyCycles = new int[]{1024,16,64,256};
 
 		void UpdateDIVAndTIMA(){
-			divCycleTimer++;
-			timaCycleTimer++;
+			if(!cpu.stopMode) divCycleTimer++;
 
 			//Check if DIV should be incremented
-			if(divCycleTimer >= 16384){
-				divCycleTimer %= 16384;
-				memory.hram[(int)IORegister.DIV]++;
+			if(divCycleTimer == 256){
+				divCycleTimer = 0;
+				memory.regs.DIV++;
 			}
 
 			//Check if TIMA should be incremented
-			byte tac = memory.GetIOReg(IORegister.TAC);
-			byte tma = memory.GetIOReg(IORegister.TMA);
-			byte tima = memory.GetIOReg(IORegister.TIMA);
+			byte tac = memory.regs.TAC;
+			byte tma = memory.regs.TMA;
+			byte tima = memory.regs.TIMA;
 
 			int timerEnableFlag = (tac >> 2) & 1;
 			int timerClockSelect = tac & 0x3;
 
 			if(timerEnableFlag == 1){
+				timaCycleTimer++;
 				int cyclesPerIncrement = tacClockIncrementFrequencyCycles[timerClockSelect];
 				while(timaCycleTimer >= cyclesPerIncrement){
 					timaCycleTimer -= cyclesPerIncrement;
@@ -249,7 +253,7 @@ namespace LunaGB.Core{
 						memory.RequestInterrupt(Interrupt.Timer);
 					}
 				}
-				memory.hram[(int)IORegister.TIMA] = tima;
+				memory.regs.TIMA = tima;
 			}
 		}
 

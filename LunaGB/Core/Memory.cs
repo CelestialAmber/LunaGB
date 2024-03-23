@@ -55,9 +55,10 @@ namespace LunaGB.Core
 
 		public byte[] vram = new byte[0x2000]; //0x8000-9FFF
 		//FF00-FF7F: i/o registers, FF80-FFFE: hram, FFFF: interrupt flag (ie)
-		public byte[] hram = new byte[0x100]; //0xFF00-FFFF
+		public byte[] hram = new byte[0x7F]; //0xFF80-FFFE
 		public byte[] wram = new byte[0x2000]; //0xC000-DFFF
 		public ObjectAttributes[] oam = new ObjectAttributes[40]; //0xFE00-FE9F
+		public Registers regs; //0xFF00-FF7F (I/O regs), 0xFFFF (IE flag)
 
 		public ROM rom;
 		public Debugger debugger;
@@ -83,14 +84,16 @@ namespace LunaGB.Core
 			this.debugger = debugger;
 			OnMemoryRead += debugger.OnMemoryRead;
 			OnMemoryWrite += debugger.OnMemoryWrite;
+			regs = new Registers();
 		}
 
 		public void Init(){
 			//Reset the different memory section arrays
+			//TODO: wram/hram should be randomized
 			for(int i = 0; i < 0x2000; i++){
 				vram[i] = 0;
 			}
-			for(int i = 0; i < 0x100; i++){
+			for(int i = 0; i < 0x7F; i++){
 				hram[i] = 0;
 			}
 			for(int i = 0; i < 0x2000; i++){
@@ -100,14 +103,7 @@ namespace LunaGB.Core
 				oam[i] = new ObjectAttributes();
 			}
 
-			//Init the JOYP register
-			hram[(int)IORegister.P1] = 0xFF;
-			//Init the LCDC register
-			SetHRAMBit((int)IORegister.LCDC, 7, 1);
-			//Init the SB register (all 1s for now)
-			hram[(int)IORegister.SB] = 0xFF;
-			//Init the DIV register
-			hram[(int)IORegister.DIV] = 0xAB;
+			regs.Init();
 
 			canAccessOAM = true;
 			canAccessVRAM = true;
@@ -183,10 +179,10 @@ namespace LunaGB.Core
 				if(address == 0xFFFF) {
 					//Interrupt enable flag (IE)
 					//0xFFFF
-					return hram[address - 0xFF00];
+					return regs.IE;
 				}else if(address >= 0xFF80) {
 					//HRAM (0xFF80-FFFE)
-					return hram[address - 0xFF00];
+					return hram[address - 0xFF80];
 				} else if(IsIOReg(address - 0xFF00)) {
 					IORegister reg = (IORegister)(address - 0xFF00);
 					return GetIOReg(reg);
@@ -260,16 +256,15 @@ namespace LunaGB.Core
 				//unusable space
 				//FEA0-FEFF
 			}else{
-				//HRAM
-				//FF00-FFFF
 				if(address == 0xFFFF) {
 					//Interrupt enable flag (IE)
 					//0xFFFF
-					hram[address - 0xFF00] = b;
+					regs.IE = b;
 				} else if(address >= 0xFF80) {
 					//HRAM (0xFF80-FFFE)
-					hram[address - 0xFF00] = b;
+					hram[address - 0xFF80] = b;
 				} else if(IsIOReg(address - 0xFF00)) {
+					//I/O registers (0xFF00-FF7F)
 					IORegister reg = (IORegister)(address - 0xFF00);
 					SetIOReg(reg, b);
 				} else {
@@ -289,25 +284,306 @@ namespace LunaGB.Core
 
 		//TODO: check whether the registers can be read/written to
 		public byte GetIOReg(IORegister reg){
-			if(reg == IORegister.P1){
-				Input.UpdateJOYP();
-			}
 			int index = (int)reg;
-			return hram[index];
+
+			//Wave RAM
+			if(index >= 0x30 && index < 0x40){
+				return regs.waveRam[index - 0x30];
+			}
+
+			byte result = 0xFF;
+
+			switch(reg){
+				case IORegister.P1:
+				Input.UpdateJOYP();
+				result = regs.P1;
+				break;
+				case IORegister.SB:
+				result = regs.SB;
+				break;
+				case IORegister.SC:
+				result = regs.SC;
+				break;
+				case IORegister.DIV:
+				result = regs.DIV;
+				break;
+				case IORegister.TIMA:
+				result = regs.TIMA;
+				break;
+				case IORegister.TMA:
+				result = regs.TMA;
+				break;
+				case IORegister.TAC:
+				result = regs.TAC;
+				break;
+				case IORegister.IF:
+				result = regs.IF;
+				break;
+				case IORegister.NR10:
+				result = regs.NR10;
+				break;
+				case IORegister.NR11:
+				result = regs.NR11;
+				break;
+				case IORegister.NR12:
+				result = regs.NR12;
+				break;
+				case IORegister.NR13:
+				result = regs.NR13;
+				break;
+				case IORegister.NR14:
+				result = regs.NR14;
+				break;
+				case IORegister.NR21:
+				result = regs.NR21;
+				break;
+				case IORegister.NR22:
+				result = regs.NR22;
+				break;
+				case IORegister.NR23:
+				result = regs.NR23;
+				break;
+				case IORegister.NR24:
+				result = regs.NR24;
+				break;
+				case IORegister.NR30:
+				result = regs.NR30;
+				break;
+				case IORegister.NR31:
+				result = regs.NR31;
+				break;
+				case IORegister.NR32:
+				result = regs.NR32;
+				break;
+				case IORegister.NR33:
+				result = regs.NR33;
+				break;
+				case IORegister.NR34:
+				result = regs.NR34;
+				break;
+				case IORegister.NR41:
+				result = regs.NR41;
+				break;
+				case IORegister.NR42:
+				result = regs.NR42;
+				break;
+				case IORegister.NR43:
+				result = regs.NR43;
+				break;
+				case IORegister.NR44:
+				result = regs.NR44;
+				break;
+				case IORegister.NR50:
+				result = regs.NR50;
+				break;
+				case IORegister.NR51:
+				result = regs.NR51;
+				break;
+				case IORegister.NR52:
+				result = regs.NR52;
+				break;
+				case IORegister.LCDC:
+				result = regs.LCDC;
+				break;
+				case IORegister.STAT:
+				result = regs.STAT;
+				break;
+				case IORegister.SCY:
+				result = regs.SCY;
+				break;
+				case IORegister.SCX:
+				result = regs.SCX;
+				break;
+				case IORegister.LY:
+				result = regs.LY;
+				break;
+				case IORegister.LYC:
+				result = regs.LYC;
+				break;
+				case IORegister.DMA:
+				result = regs.DMA;
+				break;
+				case IORegister.BGP:
+				result = regs.BGP;
+				break;
+				case IORegister.OBP0:
+				result = regs.OBP0;
+				break;
+				case IORegister.OBP1:
+				result = regs.OBP1;
+				break;
+				case IORegister.WY:
+				result = regs.WY;
+				break;
+				case IORegister.WX:
+				result = regs.WX;
+				break;
+				case IORegister.KEY1:
+				//result = regs.KEY1;
+				break;
+				case IORegister.VBK:
+				//result = regs.VBK;
+				break;
+				case IORegister.HDMA1:
+				//result = regs.HDMA1;
+				break;
+				case IORegister.HDMA2:
+				//result = regs.HDMA2;
+				break;
+				case IORegister.HDMA3:
+				//result = regs.HDMA3;
+				break;
+				case IORegister.HDMA4:
+				//result = regs.HDMA4;
+				break;
+				case IORegister.HDMA5:
+				//result = regs.HDMA5;
+				break;
+				case IORegister.RP:
+				break;
+				case IORegister.BCPS:
+				break;
+				case IORegister.BCPD:
+				break;
+				case IORegister.OCPS:
+				break;
+				case IORegister.OCPD:
+				break;
+				case IORegister.SVBK:
+				break;
+				case IORegister.PCM12:
+				break;
+				case IORegister.PCM34:
+				break;
+				default:
+				Console.WriteLine("Error: somehow trying to read from a missing io register ;<");
+				break;
+			}
+
+			return result;
 		}
 
 		public void SetIOReg(IORegister reg, byte val) {
 			int index = (int)reg;
 
+			//Wave RAM
+			if(index >= 0x30 && index < 0x40){
+				regs.waveRam[index - 0x30] = val;
+				return;
+			}
+
 			switch(reg){
 				case IORegister.P1:
-				//Only bits 4/5 are read/writeable
-				SetHRAMBit((int)IORegister.P1,4,(val >> 4) & 1);
-				SetHRAMBit((int)IORegister.P1,5,(val >> 5) & 1);
+				regs.P1 = val;
+				break;
+				case IORegister.SB:
+				regs.SB = val;
+				break;
+				case IORegister.SC:
+				regs.SC = val;
 				break;
 				case IORegister.DIV:
 				//If the CPU tries to write to the DIV register, reset it
 				ResetDIV();
+				break;
+				case IORegister.TIMA:
+				regs.TIMA = val;
+				break;
+				case IORegister.TMA:
+				regs.TMA = val;
+				break;
+				case IORegister.TAC:
+				regs.TAC = val;
+				break;
+				case IORegister.IF:
+				regs.IF = val;
+				break;
+				case IORegister.NR10:
+				regs.NR10 = val;
+				break;
+				case IORegister.NR11:
+				regs.NR11 = val;
+				break;
+				case IORegister.NR12:
+				regs.NR12 = val;
+				break;
+				case IORegister.NR13:
+				regs.NR13 = val;
+				break;
+				case IORegister.NR14:
+				regs.NR14 = val;
+				break;
+				case IORegister.NR21:
+				regs.NR21 = val;
+				break;
+				case IORegister.NR22:
+				regs.NR22 = val;
+				break;
+				case IORegister.NR23:
+				regs.NR23 = val;
+				break;
+				case IORegister.NR24:
+				regs.NR24 = val;
+				break;
+				case IORegister.NR30:
+				regs.NR30 = val;
+				break;
+				case IORegister.NR31:
+				regs.NR31 = val;
+				break;
+				case IORegister.NR32:
+				regs.NR32 = val;
+				break;
+				case IORegister.NR33:
+				regs.NR33 = val;
+				break;
+				case IORegister.NR34:
+				regs.NR34 = val;
+				break;
+				case IORegister.NR41:
+				regs.NR41 = val;
+				break;
+				case IORegister.NR42:
+				regs.NR42 = val;
+				break;
+				case IORegister.NR43:
+				regs.NR43 = val;
+				break;
+				case IORegister.NR44:
+				regs.NR44 = val;
+				break;
+				case IORegister.NR50:
+				regs.NR50 = val;
+				break;
+				case IORegister.NR51:
+				regs.NR51 = val;
+				break;
+				case IORegister.NR52:
+				regs.NR52 = val;
+				break;
+				case IORegister.LCDC:
+				int newLcdEnableValue = (val >> 7) & 1;
+				int curLcdEnableValue = regs.lcdcEnable;
+				//If the lcd enable flag was changed, notify the emulator
+				if(newLcdEnableValue != curLcdEnableValue){
+					OnLCDEnableChange?.Invoke(newLcdEnableValue == 1 ? true : false);
+				}
+				regs.LCDC = val;
+				break;
+				case IORegister.STAT:
+				regs.STAT = val;
+				break;
+				case IORegister.SCY:
+				regs.SCY = val;
+				break;
+				case IORegister.SCX:
+				regs.SCX = val;
+				break;
+				case IORegister.LY:
+				regs.LY = val;
+				break;
+				case IORegister.LYC:
+				regs.LYC = val;
 				break;
 				case IORegister.DMA:
 				//If the DMA register is written to, notify the emulator to perform an OAM DMA transfer
@@ -315,18 +591,62 @@ namespace LunaGB.Core
 				dmaTransferIndex = 0;
 				//TODO: handle case where upper byte > 0xDF
 				dmaTransferSourceAddress = val << 8;
+				//regs.DMA = val;
 				break;
-				case IORegister.LCDC:
-				int newLcdEnableValue = (val >> 7) & 1;
-				int curLcdEnableValue = GetHRAMBit(7,(int)IORegister.LCDC);
-				//If the lcd enable flag was changed, notify the emulator
-				if(newLcdEnableValue != curLcdEnableValue){
-					OnLCDEnableChange?.Invoke(newLcdEnableValue == 1 ? true : false);
-				}
-				hram[index] = val;
+				case IORegister.BGP:
+				regs.BGP = val;
+				break;
+				case IORegister.OBP0:
+				regs.OBP0 = val;
+				break;
+				case IORegister.OBP1:
+				regs.OBP1 = val;
+				break;
+				case IORegister.WY:
+				regs.WY = val;
+				break;
+				case IORegister.WX:
+				regs.WX = val;
+				break;
+				case IORegister.KEY1:
+				//regs.KEY1 = val;
+				break;
+				case IORegister.VBK:
+				//regs.VBK = val;
+				break;
+				case IORegister.HDMA1:
+				//regs.HDMA1 = val;
+				break;
+				case IORegister.HDMA2:
+				//regs.HDMA2 = val;
+				break;
+				case IORegister.HDMA3:
+				//regs.HDMA3 = val;
+				break;
+				case IORegister.HDMA4:
+				//regs.HDMA4 = val;
+				break;
+				case IORegister.HDMA5:
+				//regs.HDMA5 = val;
+				break;
+				case IORegister.RP:
+				break;
+				case IORegister.BCPS:
+				break;
+				case IORegister.BCPD:
+				break;
+				case IORegister.OCPS:
+				break;
+				case IORegister.OCPD:
+				break;
+				case IORegister.SVBK:
+				break;
+				case IORegister.PCM12:
+				break;
+				case IORegister.PCM34:
 				break;
 				default:
-				hram[index] = val;
+				Console.WriteLine("Error: somehow trying to write to a missing io register :<");
 				break;
 			}
 		}
@@ -363,20 +683,11 @@ namespace LunaGB.Core
 		}
 
 		public void RequestInterrupt(Interrupt interrupt){
-			SetHRAMBit((int)IORegister.IF, (int)interrupt, 1);
+			regs.SetBit(ref regs.IF, (int)interrupt, 1);
 		}
 
 		public void ResetDIV(){
-			hram[(int)IORegister.DIV] = 0;
-		}
-
-		public byte GetHRAMBit(int bit, int index) {
-			return (byte)((hram[index] >> bit) & 1);
-		}
-
-		public void	SetHRAMBit(int index, int bit, int val) {
-			byte b = hram[index];
-			hram[index] = (byte)((b & ~(1 << bit)) | (val << bit));
+			regs.DIV = 0;
 		}
 
 		public void WriteUInt16(int address, ushort val) {

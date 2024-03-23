@@ -17,7 +17,7 @@ public class MBC5 : Cartridge
 	}
 
 	public override void Init(){
-		currentRomBank = 0;
+		currentRomBank = 1;
 		currentRamBank = 0;
 		rumbleEnabled = false;
 		ramEnable = false;
@@ -65,6 +65,8 @@ public class MBC5 : Cartridge
 			currentRomBank = (currentRomBank & 0xFF) | ((val & 1) << 8);
 		}else if(index < 0x6000){
 			//RAM Bank Number/Rumble Enable (0x4000-0x5FFF)
+			//The upper 4 bits are unused
+			val &= 0xF;
 			if(hasRam){
 				currentRamBank = val & 0b111;
 			}

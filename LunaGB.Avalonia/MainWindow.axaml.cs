@@ -43,11 +43,12 @@ namespace LunaGB.Avalonia {
 			DrawStartupImage();
 		}
 
-		protected virtual void OnClosing(CancelEventArgs e) {
+		protected override void OnClosing(WindowClosingEventArgs e) {
 			//If the emulator is still running, stop it before closing
 			if(emulator.isRunning) {
 				StopEmulation();
 			}
+			base.OnClosing(e);
 		}
 
 		void InitUpdateFPSTimer(){
@@ -96,7 +97,7 @@ namespace LunaGB.Avalonia {
 				string filename = fileItem.ConvertPathToString();
 				LoadROM(filename);
 			}else{
-				Console.WriteLine("Dropped folder/url?");
+				Console.WriteLine("Dropped folder/url? Whatever you dropped it isn't supported :<");
 			}
         }
 
@@ -248,7 +249,6 @@ namespace LunaGB.Avalonia {
 			Console.WriteLine("Breakpoint hit");
 			emulator.PrintDebugInfo();
 			emulator.paused = true;
-			emulator.pausedOnBreakpoint = true;
 		}
 
 
