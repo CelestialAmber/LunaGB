@@ -1,4 +1,5 @@
 ﻿using System;
+using LunaGB.Core.RTC;
 
 
 namespace LunaGB.Core.ROMMappers
@@ -7,42 +8,40 @@ namespace LunaGB.Core.ROMMappers
 //Class for MBC3 roms.
 public class MBC3 : Cartridge
 {
+	/*
+	Register info:
+	The day counter, halt flag and day counter carry flag are stored in two registers:
+	rtcDL: lower 8 bits of day counter
+	rtcDH:
+	bit 0: 9th bit of day counter
+	bit 6: halt (0: active, 1: halted)
+	bit 7: day counter carry
+	*/
+
 	int currentRomBank;
 	int ramRtcSelectionReg;
-	byte rtcSecs;
-	byte rtcMins;
-	byte rtcHours;
-	bool haltRtc = false;
-	//lower 8 bits of day counter
-	byte rtcDayCounterLow;
-	//bit 0: 9th bit of day counter
-	//bit 6: halt (0: active, 1: stop timer)
-	//bit 7: day counter carry bit (1: counter overflow)
-	byte rtcDayCounterHigh;
-	bool ramTimerEnable = false;
+	bool ramTimerEnable;
 
 	//Used for handling latching the clock data
-	int latchClockData = -1;
-	bool clockLatched = false;
+	int latchClockReg;
+	bool latched;
+
+	public RealTimeClock rtc;
 
 	public MBC3(bool hasRam, bool hasBattery, bool hasTimer){
 		this.hasRam = hasRam;
 		this.hasBattery = hasBattery;
 		this.hasTimer = hasTimer;
+		rtc = new RealTimeClock();
 	}
 
 	public override void Init(){
 		currentRomBank = 1;
 		ramRtcSelectionReg = 0;
-		rtcSecs = 0;
-		rtcMins = 0;
-		rtcHours = 0;
-		rtcDayCounterLow = 0;
-		rtcDayCounterHigh = 0;
-		latchClockData = -1;
-		clockLatched = false;
-		haltRtc = false;
+		latchClockReg = -1;
+		latched = false;
 		ramTimerEnable = false;
+		rtc.Init();
 	}
 
 	public override byte GetByte(int address) {
@@ -56,21 +55,25 @@ public class MBC3 : Cartridge
 			return rom[romBank*0x4000 + (address - 0x4000)];
 		}else if(address >= 0xA000 && address < 0xC000){
 			//External RAM/RTC Registers (0xA000-0xBFFF)
-			//If the ram/rtc selection value is 0-3, access the corresponding ram bank.
-			if(ramRtcSelectionReg <= 3){
-				int bank = ramRtcSelectionReg;
-				if(bank >= ramBanks) bank %= ramBanks;
-				return ram[bank*0x2000 + (address - 0xA000)];
-			}else{
-				//If it's 8-12, access the corresponding RTC register instead.
-				switch(ramRtcSelectionReg){
-					case 8: return rtcSecs;
-					case 9: return rtcMins;
-					case 10: return rtcHours;
-					case 11: return rtcDayCounterLow;
-					case 12: return rtcDayCounterHigh;
-					default: throw new Exception("how tf did it get here?");
+			if(ramTimerEnable){
+				//If the ram/rtc selection value is 0-3, access the corresponding ram bank.
+				if(ramRtcSelectionReg <= 3){
+					int bank = ramRtcSelectionReg;
+					if(bank >= ramBanks) bank %= ramBanks;
+					return ram[bank*0x2000 + (address - 0xA000)];
+				}else{
+					//If it's 8-12, access the corresponding RTC register instead.
+					switch(ramRtcSelectionReg){
+						case 8: return (byte)rtc.GetSeconds();
+						case 9: return (byte)rtc.GetMinutes();
+						case 10: return (byte)rtc.GetHours();
+						case 11: return (byte)(rtc.GetDays() & 0xFF);
+						case 12: return (byte)(((rtc.GetDays() >> 8) & 1) | (rtc.IsHalted() ? (1 << 6) : 0) | (rtc.overflow ? (1 << 7) : 0));
+						default: throw new Exception("how tf did it get here?");
+					}
 				}
+			}else{
+				return 0xFF;
 			}
 		}else{
 			//All other reads return 0?
@@ -83,7 +86,9 @@ public class MBC3 : Cartridge
 			//RAM/RTC Enable (0x0000-0x1FFF)
 			if((val & 0xF) == 0xA){
 				//RAM/RTC are enabled if the lower nybble is A
-				if(hasRam || hasTimer) ramTimerEnable = true;
+				if(hasRam || hasTimer){
+					ramTimerEnable = true;
+				}
 			}else{
 				//Otherwise it's disabled
 				ramTimerEnable = false;
@@ -105,15 +110,17 @@ public class MBC3 : Cartridge
 			//until the same process is repeated. Afterwards, the time in the rtc registers
 			//is restored to the current time?
 
-			//If 0 was written and 1 is now written, enable/disable latching the current time
-			//to the rtc registers.
-			if(latchClockData == 0 && val == 1){
-				clockLatched = !clockLatched;
-				if(clockLatched){
-					UpdateRTC();
+			//If 0 was written and 1 is now written, latch/unlatch the current time to the rtc registers.
+			if(latchClockReg == 0 && val == 1){
+				if(latched){
+					rtc.Unlatch();
+					latched = false;
+				}else{
+					rtc.Latch();
+					latched = true;
 				}
 			}
-			latchClockData = val;
+			latchClockReg = val;
 		}else if(index >= 0xA000 && index < 0xC000){
 			//External RAM/RTC Registers (0xA000-0xBFFF)
 			if(ramTimerEnable){
@@ -126,7 +133,33 @@ public class MBC3 : Cartridge
 					if(hasBattery) sramDirty = true;
 				}else{
 					//If it's 8-12, access the corresponding RTC register instead.
-					//TODO
+					switch(ramRtcSelectionReg){
+					case 8:
+						if(val > 59) val = 59;
+						rtc.SetSeconds(val);
+						break;
+					case 9: 
+						if(val > 59) val = 59;
+						rtc.SetMinutes(val);
+						break;
+					case 10:
+						if(val > 23) val = 23;
+						rtc.SetHours(val);
+						break;
+					case 11:
+						rtc.SetDays((rtc.GetDays() & 0x100) + val);
+						break;
+					case 12:
+						int newHaltFlag = (val >> 6) & 1;
+						int newCarryFlag = (val >> 7) & 1;
+						rtc.SetDays((rtc.GetDays() & 0xFF) + ((val & 1) << 8));
+						rtc.SetHalt(newHaltFlag == 1 ? true : false);
+						if(newCarryFlag == 0){
+							rtc.overflow = false;
+						}
+						break;
+					default: throw new Exception("how tf did it get here?");
+				}
 				}
 			}
 		}else{
@@ -134,13 +167,13 @@ public class MBC3 : Cartridge
 		}
 	}
 
-	void UpdateRTC(){
-		//Set to a set value for now
-		rtcSecs = 10;
-		rtcMins = 23;
-		rtcHours = 8;
-		rtcDayCounterLow = 1;
-		rtcDayCounterHigh = 0;
+	public override void ToggleTimer(bool paused){
+		if(paused) rtc.Pause();
+		else rtc.Resume();
+	}
+
+	public override int GetSaveFileSize(){
+		return ram.Length + (hasTimer ? 48 : 0);
 	}
 }
 }

@@ -15,10 +15,20 @@ namespace LunaGB.Core {
 
 
 		public Cartridge() {
+			rom = Array.Empty<byte>();
+			ram = Array.Empty<byte>();
 		}
 
 		public virtual void Init(){
 			ClearRAM();
+		}
+
+		public virtual int GetSaveFileSize(){
+			return ram.Length;
+		}
+
+		//Called when the emulator is paused/resumed to pause/resume the timer if necessary.
+		public virtual void ToggleTimer(bool paused){
 		}
 
 		public abstract byte GetByte(int index);

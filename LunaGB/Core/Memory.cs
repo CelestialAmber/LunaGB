@@ -183,7 +183,10 @@ namespace LunaGB.Core
 				}else if(address >= 0xFF80) {
 					//HRAM (0xFF80-FFFE)
 					return hram[address - 0xFF80];
-				} else if(IsIOReg(address - 0xFF00)) {
+				}else if(address >= 0xFF30 && address < 0xFF40){
+					//Wave RAM (0xFF30-FF40)
+					return regs.waveRam[address - 0xFF30];
+				}else if(IsIOReg(address - 0xFF00)) {
 					IORegister reg = (IORegister)(address - 0xFF00);
 					return GetIOReg(reg);
 				} else {
@@ -263,7 +266,10 @@ namespace LunaGB.Core
 				} else if(address >= 0xFF80) {
 					//HRAM (0xFF80-FFFE)
 					hram[address - 0xFF80] = b;
-				} else if(IsIOReg(address - 0xFF00)) {
+				}else if(address >= 0xFF30 && address < 0xFF40){
+					//Wave RAM (0xFF30-FF40)
+					regs.waveRam[address - 0xFF30] = b;
+				}else if(IsIOReg(address - 0xFF00)) {
 					//I/O registers (0xFF00-FF7F)
 					IORegister reg = (IORegister)(address - 0xFF00);
 					SetIOReg(reg, b);
@@ -282,15 +288,7 @@ namespace LunaGB.Core
 			return Enum.IsDefined(typeof(IORegister), regIndex);
 		}
 
-		//TODO: check whether the registers can be read/written to
 		public byte GetIOReg(IORegister reg){
-			int index = (int)reg;
-
-			//Wave RAM
-			if(index >= 0x30 && index < 0x40){
-				return regs.waveRam[index - 0x30];
-			}
-
 			byte result = 0xFF;
 
 			switch(reg){
@@ -440,20 +438,28 @@ namespace LunaGB.Core
 				//result = regs.HDMA5;
 				break;
 				case IORegister.RP:
+				//result = regs.RP;
 				break;
 				case IORegister.BCPS:
+				//result = regs.BCPS;
 				break;
 				case IORegister.BCPD:
+				//result = regs.BCPD;
 				break;
 				case IORegister.OCPS:
+				//result = regs.OCPS;
 				break;
 				case IORegister.OCPD:
+				//result = regs.OCPD;
 				break;
 				case IORegister.SVBK:
+				//result = regs.SVBK;
 				break;
 				case IORegister.PCM12:
+				//result = regs.PCM12;
 				break;
 				case IORegister.PCM34:
+				//result = regs.PCM34;
 				break;
 				default:
 				Console.WriteLine("Error: somehow trying to read from a missing io register ;<");
@@ -464,14 +470,6 @@ namespace LunaGB.Core
 		}
 
 		public void SetIOReg(IORegister reg, byte val) {
-			int index = (int)reg;
-
-			//Wave RAM
-			if(index >= 0x30 && index < 0x40){
-				regs.waveRam[index - 0x30] = val;
-				return;
-			}
-
 			switch(reg){
 				case IORegister.P1:
 				regs.P1 = val;
@@ -630,20 +628,28 @@ namespace LunaGB.Core
 				//regs.HDMA5 = val;
 				break;
 				case IORegister.RP:
+				//regs.RP = val;
 				break;
 				case IORegister.BCPS:
+				//regs.BCPS = val;
 				break;
 				case IORegister.BCPD:
+				//regs.BCPD = val;
 				break;
 				case IORegister.OCPS:
+				//regs.OCPS = val;
 				break;
 				case IORegister.OCPD:
+				//regs.OCPD = val;
 				break;
 				case IORegister.SVBK:
+				//regs.SVBK = val;
 				break;
 				case IORegister.PCM12:
+				//regs.PCM12 = val;
 				break;
 				case IORegister.PCM34:
+				//regs.PCM34 = val;
 				break;
 				default:
 				Console.WriteLine("Error: somehow trying to write to a missing io register :<");

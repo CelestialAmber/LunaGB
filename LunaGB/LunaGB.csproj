@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>LunaGB</RootNamespace>
-    <Nullable>enable</Nullable>
+	<Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +25,6 @@
     <Folder Include="Graphics\" />
     <Folder Include="Tests\" />
     <Folder Include="Core\Debugger\" />
-    <Folder Include="Utils/" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3" />

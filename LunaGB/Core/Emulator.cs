@@ -4,6 +4,7 @@ using System.Diagnostics;
 using LunaGB.Graphics;
 using LunaGB.Utils;
 using System.Text;
+using LunaGB.Core.ROMMappers;
 
 namespace LunaGB.Core{
 	public class Emulator{
@@ -99,6 +100,12 @@ namespace LunaGB.Core{
 			//Start the timer for updating the rom's save file periodically if the rom uses save data.
 			if(rom.useSaveFile){
 				updateSaveFileTimer.Start();
+			}
+			
+			//If the rom uses an rtc clock, start it
+			if(rom.romMapper.hasTimer){
+				MBC3 mbc3 = (MBC3)rom.romMapper;
+				mbc3.rtc.Start();
 			}
 
 			if(Options.bootToPause){
@@ -257,11 +264,25 @@ namespace LunaGB.Core{
 			}
 		}
 
+		//Pauses/Unpauses the emulator.
+		public void TogglePause(){
+			paused = !paused;
+			//Pause/unpause the rtc timer if the cartridge has one.
+			if(rom.romMapper.hasTimer){
+				rom.romMapper.ToggleTimer(paused);
+			}
+		}
+
 		//Stops the emulator.
 		public void Stop() {
 			isRunning = false;
 			//Stop the update save file timer if it was enabled.
 			updateSaveFileTimer.Stop();
+			//Stop the rtc timer if the cartridge has one.
+			if(rom.romMapper.hasTimer){
+				MBC3 mbc3 = (MBC3)rom.romMapper;
+				mbc3.rtc.Stop();
+			}
 		}
 
 		void CheckJOYP(){

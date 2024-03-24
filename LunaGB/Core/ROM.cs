@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Collections.Generic;
 using LunaGB.Core.ROMMappers;
 
 namespace LunaGB.Core
@@ -192,6 +192,7 @@ namespace LunaGB.Core
 					LoadSaveFile(saveFilePath);
 				}
 				useSaveFile = true;
+				updatingSaveData = false;
 			}
 		}
 
@@ -335,26 +336,61 @@ namespace LunaGB.Core
 			Console.WriteLine("Global Checksum: " + header.globalChecksum.ToString("X2"));
 		}
 
-		//Loads the save data from the given file into the loaded ROM's SRAM if able.
+		//Loads the save data from the given file if able.
 		public void LoadSaveFile(string path){
 			if(romMapper.hasRam && romMapper.hasBattery){
 				byte[] saveData = File.ReadAllBytes(path);
-				if(romMapper.ram.Length != saveData.Length){
+				int saveFileSize = romMapper.GetSaveFileSize();
+				int ramSize = romMapper.ram.Length;
+
+				if(saveFileSize!= saveData.Length){
 					Console.WriteLine("Warning: Save file size does not match expected size for the loaded ROM.");
 				}
-				for(int i = 0; i < romMapper.ram.Length; i++){
+				for(int i = 0; i < ramSize; i++){
 					romMapper.ram[i] = saveData[i];
+				}
+
+				int rtcDataLength = saveData.Length - ramSize;
+
+				//Load rtc timer data if the game uses rtc
+				if(romMapper.hasTimer){
+					if(romMapper is MBC3){
+						MBC3 mbc3 = (MBC3)romMapper;
+						if(rtcDataLength == 48){
+							byte[] rtcData = saveData.Skip(ramSize).ToArray();
+							mbc3.rtc.LoadSaveRTCData(rtcData);
+						}else{
+							Console.WriteLine("Warning: couldn't load rtc data; size isn't 48 bytes, but {0} bytes", rtcDataLength);
+						}
+					}
 				}
 			}else{
 				throw new Exception("Error: Can't load save file for a ROM without SRAM.");
 			}
 		}
 
+		bool updatingSaveData = false;
+
 		public void UpdateSaveFile(){
 			//If SRAM has changed, update the save file.
 			if(romMapper.sramDirty){
-				File.WriteAllBytes(saveFilePath, romMapper.ram);
-				romMapper.sramDirty = false;
+				if(!updatingSaveData){
+					updatingSaveData = true;
+					int ramSize = romMapper.ram.Length;
+					byte[] saveData = new byte[romMapper.GetSaveFileSize()];
+					Array.Copy(romMapper.ram, saveData, ramSize);
+					
+					//If the cartridge has a timer, append the rtc data to the save data.
+					if(romMapper.hasTimer){
+						if(romMapper is MBC3){
+							MBC3 mbc3 = (MBC3)romMapper;
+							Array.Copy(mbc3.rtc.ToByteArray(), 0, saveData, ramSize, 48);
+						}
+					}
+					File.WriteAllBytes(saveFilePath, saveData.ToArray());
+					romMapper.sramDirty = false;
+					updatingSaveData = false;
+				}
 			}
 		}
 

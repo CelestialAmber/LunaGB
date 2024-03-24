@@ -211,8 +211,7 @@ namespace LunaGB.Avalonia {
 		}
 
 		public void TogglePause() {
-			emulator.paused = !emulator.paused;
-
+			emulator.TogglePause();
 			if (emulator.paused) Console.WriteLine("Emulation paused");
 			else Console.WriteLine("Emulation resumed");
 		}
