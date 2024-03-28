@@ -37,6 +37,17 @@ namespace LunaGB.Core {
 			set{ SetFlag(0, value); }
 		}
 
+		//Sets the given flag to the given value
+		void SetFlag(int index, int val) {
+			F = (byte)((F & ~(1 << (index + 4))) | (val << (index + 4)));
+		}
+
+		//Gets the requested flag
+		int GetFlag(int index) {
+			return (F >> (index + 4)) & 1;
+		}
+
+
 		//Register pairs
 		public ushort AF {
 			get{
@@ -86,18 +97,21 @@ namespace LunaGB.Core {
 
 
 		public int cycles; //cycles taken by the current instruction
-		public bool stopMode;
+
 		public bool gbcCpuSpeed; //false: regular cpu speed (gb), true: 2x cpu speed (gbc)
 		public bool ime;
 		public bool haltMode;
+		public bool stopMode;
 		bool haltBug; //is the halt bug active?
 		public bool onGBC; //whether we're on gbc or not
 
 		//Event used for if the CPU encounters an error.
 		public delegate void CPUErrorEvent();
 		public event CPUErrorEvent? OnCPUError;
-
 		public Memory memory;
+
+		//Checks whether an interrupt is pending (IE & IF != 0)
+		public bool CheckIfInterruptPending() => (IE & memory.regs.IF) != 0;
 
 		public CPU(Memory memory) {
 			this.memory = memory;
@@ -216,7 +230,7 @@ namespace LunaGB.Core {
 						}else if(opcode == 0x10){
 							//stop
 							//here be dragons
-							byte JOYP = memory.GetIOReg(IORegister.P1);
+							byte JOYP = memory.regs.P1;
 							bool buttonHeld = (JOYP & 0b1111) != 0b1111; //Check if any buttons selected in JOYP are being held
 							bool speedSwitchRequested = false;
 							//TODO: for now, no speed switch was requested
@@ -1427,17 +1441,6 @@ namespace LunaGB.Core {
 			}
 		}
 
-		//Sets the given flag to the given value
-		void SetFlag(int index, int val) {
-			F = (byte)((F & ~(1 << (index + 4))) | (val << (index + 4)));
-		}
-
-		//Gets the requested flag
-		int GetFlag(int index) {
-			return (F >> (index + 4)) & 1;
-		}
-
-
 		byte ReadByte() {
 			byte b = memory.GetByte(pc);
 			pc++;
@@ -1476,7 +1479,7 @@ namespace LunaGB.Core {
 		public void CheckForRequestedInterrupts(){
 			//Only check for interrupts if ime is set
 			if(ime && CheckIfInterruptPending()){
-				byte IF = memory.GetIOReg(IORegister.IF);
+				byte IF = memory.regs.IF;
 
 				//Call the first interrupt handler that can be called.
 				for(int i = 0; i < 5; i++){
@@ -1532,13 +1535,6 @@ namespace LunaGB.Core {
 			//Step 3: Update the PC to the address of the corresponding interrupt handler (4 cycles)
 			pc = address;
 			cycles += 4;
-		}
-
-		//Checks whether an interrupt is pending (IE & IF != 0)
-		public bool CheckIfInterruptPending()
-		{
-			byte ifReg = memory.GetIOReg(IORegister.IF);
-			return (IE & ifReg) != 0;
 		}
 	}
 }

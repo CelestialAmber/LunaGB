@@ -83,7 +83,7 @@ public class MBC1 : Cartridge
 			if(romBanks <= 32 && ramBanks == 1) return;
 			bankingMode = val;
 		}else if(index >= 0xA000 && index < 0xC000){
-			//External RAM (0xA000-0xBFFF) (todo)
+			//External RAM (0xA000-0xBFFF)
 			if(ramEnable){
 				int bank = bankingMode == 0 ? 0 : bank2;
 				if(bank >= ramBanks) bank %= ramBanks;

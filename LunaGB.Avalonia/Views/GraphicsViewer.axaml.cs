@@ -114,9 +114,9 @@ namespace LunaGB.Avalonia.Views
 				oam[i] = memory.oam[i];
 			}
 
-			byte bgp = memory.GetIOReg(IORegister.BGP);
-			byte obp0 = memory.GetIOReg(IORegister.OBP0);
-			byte obp1 = memory.GetIOReg(IORegister.OBP1);
+			byte bgp = memory.regs.BGP;
+			byte obp0 = memory.regs.OBP0;
+			byte obp1 = memory.regs.OBP1;
 
 			for(int i = 0; i < 4; i++){
 				bgPalette[i] = (byte)((bgp >> (i*2)) & 3);

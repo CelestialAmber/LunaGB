@@ -27,9 +27,9 @@ namespace LunaGB.Core
 		public const int cyclesPerScanline = 456; //each scanline takes 456 cycles
 		public int scanlineCycleCount = 0;
 		bool blockStatIrqs = false;
-		byte[,] pixels = new byte[160,144]; //used to store pixels before rendering the final image to the screen
 		public bool onGBC; //whether we're on gbc or not
 		public bool finishedFrame;
+		public bool lcdReenabled; //used to keep track of if the lcd was reenabled and this frame should be discarded
 
 
 		//Arrays for storing the GB register color palettes for easier use
@@ -49,12 +49,12 @@ namespace LunaGB.Core
 			ly = 0;
 			WY_latch = false;
 			finishedFrame = false;
+			lcdReenabled = false;
 			windowLine = 0;
 			scanlineCycleCount = 0;
 			SetMode(PPUMode.OAM);
 			memory.canAccessOAM = false;
 			blockStatIrqs = false;
-			ClearPixelData();
 		}
 
 		public string GetPPUStateInfo(){
@@ -73,11 +73,10 @@ namespace LunaGB.Core
 			}
 			*/
 
-			byte stat = memory.GetIOReg(IORegister.STAT);
-			int mode0IntSelect = (stat >> 3) & 1;
-			int mode1IntSelect = (stat >> 4) & 1;
-			int mode2IntSelect = (stat >> 5) & 1;
-			int lycIntSelect = (stat >> 6) & 1;
+			int mode0IntSelect = memory.regs.INTR_M0;
+			int mode1IntSelect = memory.regs.INTR_M1;
+			int mode2IntSelect = memory.regs.INTR_M2;
+			int lycIntSelect = memory.regs.INTR_LYC;
 
 			//Check if WY_latch should be enabled
 			if(!WY_latch && memory.regs.windowEnable == 1 && ly == memory.regs.WY) WY_latch = true;
@@ -120,8 +119,12 @@ namespace LunaGB.Core
 					memory.RequestInterrupt(Interrupt.VBlank);
 					//If the mode 1 condition was enabled and we changed to mode 1, request a stat interrupt
 					if(mode1IntSelect == 1) RequestLCDInterrupt();
-					//Update the display
-					UpdateDisplay();
+
+					//If the LCD was turned on again this frame, discard the frame
+					if(lcdReenabled){
+						display.Clear();
+						lcdReenabled = false;
+					}
 				}else if(ly == 154){
 					//If ly is 154, we're at the end of vblank, reset ly to 0
 					ly = 0;
@@ -130,7 +133,7 @@ namespace LunaGB.Core
 					windowLine = 0;
 					SetMode(PPUMode.OAM);
 				}
-				memory.SetIOReg(IORegister.LY, ly);
+				memory.regs.LY = ly;
 
 				//If the mode 2 condition is enabled and we changed to mode 2, request a stat interrupt
 				if(mode == PPUMode.OAM && mode2IntSelect == 1){
@@ -139,10 +142,10 @@ namespace LunaGB.Core
 
 			}
 
-			int lyc = memory.GetIOReg(IORegister.LYC);
+			int lyc = memory.regs.LYC;
 			int lycFlag = ly == lyc ? 1 : 0;
 
-			memory.regs.SetBit(ref memory.regs.STAT, 2, lycFlag);
+			memory.regs.LYC_STAT = lycFlag;
 
 			//If the lyc condition is enabled and ly == lyc, request a stat interrupt
 			if(lycFlag == 1 && lycIntSelect == 1){
@@ -163,8 +166,7 @@ namespace LunaGB.Core
 			mode = newMode;
 			int modeVal = (int)mode;
 			//Update the mode value in STAT (bits 0-1)
-			memory.regs.SetBit(ref memory.regs.STAT,0,modeVal & 1);
-			memory.regs.SetBit(ref memory.regs.STAT,1,(modeVal >> 1) & 1);
+			memory.regs.LCD_MODE = modeVal;
 
 			//Update the memory access flags depending on the new mode
 			//Disabled for now until accuracy improves
@@ -224,22 +226,6 @@ namespace LunaGB.Core
 			}
 		}
 
-		public void UpdateDisplay(){
-			//Update the display with the raw pixel data
-			display.Update(pixels);
-			//Reset the pixels to 0
-			ClearPixelData();
-		}
-
-
-		void ClearPixelData(){
-			for(int x = 0; x < 160; x++){
-				for(int y = 0; y < 144; y++){
-					pixels[x,y] = 0;
-				}
-			}
-		}
-
 		//Updates the gameboy palette arrays from the values currently stored in
 		//the 3 palette registers.
 		void UpdateGBPaletteArrays(){
@@ -267,8 +253,8 @@ namespace LunaGB.Core
 			int tempBgTilemapArea = memory.regs.bgTilemapArea;
 			int tempWindowTilemapArea = memory.regs.windowTilemapArea;
 
-			int scrollX = memory.GetIOReg(IORegister.SCX);
-			int scrollY = memory.GetIOReg(IORegister.SCY);
+			int scrollX = memory.regs.SCX;
+			int scrollY = memory.regs.SCY;
 			int windowX = memory.regs.WX - 7;
 			int windowY = memory.regs.WY;
 			int windowStartX = windowX >= 0 ? windowX : 0;
@@ -317,12 +303,11 @@ namespace LunaGB.Core
 			int lo = (loByte >> (7-tilePixelXPos)) & 1;
 			int hi = (hiByte >> (7-tilePixelXPos)) & 1;
 			int palIndex = lo + (hi << 1);
-			pixels[x,y] = bgPalette[palIndex];
+			display.DrawGBPixel(x,y,bgPalette[palIndex]);
 			currentPixelBGPaletteIndex = palIndex;
 		}
 
 		void DrawObjectPixel(int x, int y){
-			byte lcdc = memory.GetIOReg(IORegister.LCDC);
 			int size = memory.regs.objSize;
 
 			//Iterate through the objects from highest to lowest priority and choose the first
@@ -377,7 +362,7 @@ namespace LunaGB.Core
 					//If the object's priority is 1, and the bg/window pixel color isn't 0,
 					//don't render this pixel
 					if(obj.priority == 1 && currentPixelBGPaletteIndex != 0) break;
-					pixels[x,y] = color;
+					display.DrawGBPixel(x,y,color);
 				
 					break;
 				}

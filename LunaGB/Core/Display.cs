@@ -36,6 +36,11 @@ public class Display
 		}
 	}
 
+	public void DrawGBPixel(int x, int y, int pixel){
+		Color col = palette[pixel];
+		display.SetPixel(x,y, col);
+	}
+
 	//Clears the display image to white.
 	public void Clear(){
 		for(int x = 0; x < 160; x++){

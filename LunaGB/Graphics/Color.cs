@@ -25,6 +25,14 @@ namespace LunaGB.Graphics
         public Color()
         {
         }
+
+		public static Color operator * (Color col, float scale){
+			return new Color((int)(col.r * scale), (int)(col.g * scale), (int)(col.b * scale));
+		}
+
+		public static Color operator / (Color col, float scale){
+			return new Color((int)(col.r / scale), (int)(col.g / scale), (int)(col.b / scale));
+		}
     }
 }
 

@@ -37,9 +37,8 @@ namespace LunaGB.Avalonia.Controls
 			_display.Source = new Bitmap(new MemoryStream(image.ToByteArray()));
 		}
 
-		public void UpdateFPSText(float fps){
-			int speedPercent = (int)Math.Round(100f*(fps/Options.frameRate));
-			_fpsText.Text = string.Format("{0:0.00} fps ({1}%)",fps,speedPercent);
+		public void UpdateStatusBar(string text){
+			_fpsText.Text = text;
 		}
 
 	}

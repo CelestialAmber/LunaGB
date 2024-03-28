@@ -3,13 +3,30 @@ using System.Security.Cryptography;
 
 namespace LunaGB.Core {
 
+	//TODO: Unused bits generally seem to be 1. Is this always true?
 	public class Registers {
-		public byte _P1; //0xFF00
-		//Only bits 4/5 are writeable
+		//Bits 6-7 are unused, bits 0-3 are read only
 		public byte P1 {
-			get { return _P1; }
-			set { RegWriteMask(ref _P1, value, 0b00110000); }
+			get {
+				byte reg = (byte)(P10 | (P11 << 1) | (P12 << 2) | (P13 << 3));
+				reg |= (byte)((P14 << 4) | (P15 << 5) | (1 << 6) | (1 << 7));
+				return reg;
+			 }
+			set {
+				P14 = (value >> 4) & 1;
+				P15 = (value >> 5) & 1;
+			}
 		}
+
+		//P1 register bits
+		public int P10; //Right/A, bit 0 (read only)
+		public int P11; //Left/B, bit 1 (read only)
+		public int P12; //Up/select, bit 2 (read only)
+		public int P13; //Down/start, bit 3 (read only)
+		public int P14; //Dpad select, bit 4
+		public int P15; //Button select, bit 5
+
+
 		public byte SB; //0xFF01
 		public byte SC; //0xFF02
 		public byte DIV; //0xFF04
@@ -43,50 +60,67 @@ namespace LunaGB.Core {
 		public byte[] waveRam = new byte[16];
 
 		//PPU registers
-		public byte LCDC; //lcdc control (0xFF40)
+
+		//lcdc control (0xFF40)
+		public byte LCDC{
+			get{
+				byte reg = (byte)(bgWindowEnablePriority | (objEnable << 1) | (objSize << 2) | (bgTilemapArea << 3));
+				reg |= (byte)((bgWindowTileDataArea << 4) | (windowEnable << 5) | (windowTilemapArea << 6) | (lcdcEnable << 7));
+				return reg;
+			}
+			set{
+				bgWindowEnablePriority = value & 1;
+				objEnable = (value >> 1) & 1;
+				objSize = (value >> 2) & 1;
+				bgTilemapArea = (value >> 3) & 1;
+				bgWindowTileDataArea = (value >> 4) & 1;
+				windowEnable = (value >> 5) & 1;
+				windowTilemapArea = (value >> 6) & 1;
+				lcdcEnable = (value >> 7) & 1;
+
+				//If lcd enable is set to 0, the lcd mode bits in STAT are reset
+				if(lcdcEnable == 0){
+					LCD_MODE = 0;
+				}
+			}
+		}
 
 		//LCDC flags
-		//BG/Window enable/priority (bit 0)
-		public int bgWindowEnablePriority{
-			get{ return (LCDC >> 0) & 1; }
+		public int bgWindowEnablePriority; //BG/Window enable/priority (bit 0)
+		public int objEnable; //OBJ enable (bit 1)
+		public int objSize; //OBJ size (bit 2)
+		public int bgTilemapArea; //BG Tilemap Area (bit 3)
+		public int bgWindowTileDataArea; //BG/Window tile data area (bit 4)
+		public int windowEnable; //Window enable (bit 5)
+		public int windowTilemapArea; //Window tilemap area (bit 6)
+		public int lcdcEnable; //LCD enable (bit 7)
+
+		//PPU status (0xFF41)
+		//Bit 7 is unused, bits 0-2 are read only
+		public byte STAT{
+			get{
+				byte reg = (byte)(LCD_MODE | (LYC_STAT << 2) | (INTR_M0 << 3) | (INTR_M1 << 4));
+				reg |= (byte)((INTR_M2 << 5) | (INTR_LYC << 6) | (1 << 7));
+				return reg;
+			}
+			set{
+				INTR_M0 = (value >> 3) & 1;
+				INTR_M1 = (value >> 4) & 1;
+				INTR_M2 = (value >> 5) & 1;
+				INTR_LYC = (value >> 6) & 1;
+			}
 		}
 
-		//OBJ enable (bit 1)
-		public int objEnable {
-			get{ return (LCDC >> 1) & 1; }
-		}
+		//STAT flags
+		public int LCD_MODE; //bits 0-1 (read only)
+		public int LYC_STAT; //bit 2 (read only)
+		public int INTR_M0; //bit 3
+		public int INTR_M1; //bit 4
+		public int INTR_M2; //bit 5
+		public int INTR_LYC; //bit 6
 
-		//OBJ size (bit 2)
-		public int objSize {
-			get{ return (LCDC >> 2) & 1; }
-		}
 
-		//BG Tilemap Area (bit 3)
-		public int bgTilemapArea {
-			get{ return (LCDC >> 3) & 1; }
-		}
 
-		//BG/Window tile data area (bit 4)
-		public int bgWindowTileDataArea {
-			get{ return (LCDC >> 4) & 1; }
-		}
-
-		//Window enable (bit 5)
-		public int windowEnable {
-			get{ return (LCDC >> 5) & 1; }
-		}
-
-		//Window tilemap area (bit 6)
-		public int windowTilemapArea {
-			get{ return (LCDC >> 6) & 1; }
-		}
-
-		//LCD enable (bit 7)
-		public int lcdcEnable {
-			get{ return (LCDC >> 7) & 1; }
-		}
-
-		public byte STAT; //ppu status (0xFF41)
 		public byte SCY; //scroll y (0xFF42)
 		public byte SCX; //scroll x (0xFF43)
 		public byte LY; //line y (0xFF44)

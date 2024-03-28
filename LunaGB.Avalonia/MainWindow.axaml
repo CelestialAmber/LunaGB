@@ -21,7 +21,7 @@
                     <MenuItem Header ="_Load ROM" Click="OnClickLoadROMButton"/>
                 </MenuItem>
                 <MenuItem Header="_Emulation">
-                    <MenuItem Header ="_Pause" Click="OnClickPauseButton"/>
+                    <MenuItem x:Name="pauseMenuItem" Header ="_Pause" Click="OnClickPauseButton"/>
                     <MenuItem Header ="_Reset" Click="OnClickResetButton"/>
                     <MenuItem Header ="_Stop" Click="OnClickStopButton"/>
                 </MenuItem>

@@ -31,8 +31,8 @@ namespace LunaGB.Graphics
             pixels[x, y] = color;
         }
 
-        public void GetPixel(int x, int y, Color color) {
-            pixels[x, y] = color;
+        public Color GetPixel(int x, int y) {
+            return pixels[x, y];
         }
 
         public byte[] ToByteArray() {

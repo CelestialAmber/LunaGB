@@ -177,6 +177,11 @@ namespace LunaGB.Core
 				romMapper.ram = new byte[ramSizeKb*1024];
 			}
 
+			if(romMapper.hasRam && romMapper.ramBanks == 0){
+				Console.WriteLine("Warning: the rom claims to have ram but doesn't lol");
+				romMapper.hasRam = false;
+			}
+
 			loadedRom = true;
 		}
 

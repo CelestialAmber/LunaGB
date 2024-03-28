@@ -71,7 +71,8 @@ namespace LunaGB.Core
 		public event LCDEnableEvent? OnLCDEnableChange;
 		public delegate void MemoryErrorEvent();
 		public event MemoryErrorEvent? OnMemoryError;
-
+		public delegate void SerialTransferEnableEvent();
+		public event SerialTransferEnableEvent? OnSerialTransferEnable;
 
 		public bool canAccessOAM = false;
 		public bool canAccessVRAM = false;
@@ -478,7 +479,13 @@ namespace LunaGB.Core
 				regs.SB = val;
 				break;
 				case IORegister.SC:
-				regs.SC = val;
+				int newTransferEnableVal = (val >> 7) & 1;
+				int curTransferEnableVal = regs.GetBit(regs.SC, 7);
+				//If transfer enable is newly set, enable serial transfer
+				if(curTransferEnableVal == 0 && newTransferEnableVal == 1){
+					OnSerialTransferEnable?.Invoke();
+				}
+				regs.SC = (byte)(val & 0b10000011);
 				break;
 				case IORegister.DIV:
 				//If the CPU tries to write to the DIV register, reset it
@@ -578,7 +585,8 @@ namespace LunaGB.Core
 				regs.SCX = val;
 				break;
 				case IORegister.LY:
-				regs.LY = val;
+				//LY is read only
+				Console.WriteLine("When the ROM is sus! 😳 (LY is read only silly)");
 				break;
 				case IORegister.LYC:
 				regs.LYC = val;

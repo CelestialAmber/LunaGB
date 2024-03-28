@@ -12,6 +12,7 @@ namespace LunaGB.Core{
 		PPU ppu;
 		Memory memory;
 		ROM rom;
+		Serial serial;
 		Disassembler disassembler;
 		public Display display;
 		public Debug.Debugger debugger;
@@ -28,12 +29,15 @@ namespace LunaGB.Core{
 		int divCycleTimer = 0;
 		int timaCycleTimer = 0;
 		double msPerFrame = 0d;
-		byte prevJOYP;
+		int prevP10, prevP11, prevP12, prevP13;
+		int lastLCDEnable;
 		Logger logger;
 		Stopwatch sw;
 		public float currentFPS;
+		public double frameTime;
 		public System.Timers.Timer updateSaveFileTimer;
 		GBSystem emulatedSystem;
+		bool onGBC;
 
 		public Emulator(Debug.Debugger debugger)
 		{
@@ -42,27 +46,25 @@ namespace LunaGB.Core{
 			display = new Display();
 			cpu = new CPU(memory);
 			ppu = new PPU(memory, display);
+			serial = new Serial(memory);
 			disassembler = new Disassembler(memory);
 			this.debugger = debugger;
 			Input.memory = memory;
 			logger = new Logger("log.txt");
 			msPerFrame = 1000d*(1d/Options.frameRate);
 			sw = new Stopwatch();
-			InitUpdateSaveFileTimer();
+			updateSaveFileTimer = new System.Timers.Timer(500);
+			updateSaveFileTimer.Elapsed += OnUpdateSaveFileTimerElapsed;
+			updateSaveFileTimer.AutoReset = true;
 			//TODO: if auto detect system is enabled, use the detected system instead
 			emulatedSystem = Options.system;
 
 			//Setup events
 			memory.OnLCDEnableChange += LCDEnableChangeCallback;
 			memory.OnMemoryError += ErrorCallback;
+			memory.OnSerialTransferEnable += serial.RequestTransfer;
 			cpu.OnCPUError += ErrorCallback;
 
-		}
-
-		void InitUpdateSaveFileTimer(){
-			updateSaveFileTimer = new System.Timers.Timer(500);
-			updateSaveFileTimer.Elapsed += OnUpdateSaveFileTimerElapsed;
-			updateSaveFileTimer.AutoReset = true;
 		}
 
 		private void OnUpdateSaveFileTimerElapsed(object? source, System.Timers.ElapsedEventArgs e){
@@ -81,10 +83,10 @@ namespace LunaGB.Core{
 			divCycleTimer = 0;
 			timaCycleTimer = 0;
 			paused = false;
-			prevJOYP = memory.GetIOReg(IORegister.P1);
+			UpdatePreviousJoypadFlags();
 
 			//Check if we're running on GBC
-			bool onGBC = emulatedSystem == GBSystem.CGB;
+			onGBC = emulatedSystem == GBSystem.CGB;
 
 			//Init all of the components
 			debugger.InitBreakpoints();
@@ -92,6 +94,8 @@ namespace LunaGB.Core{
 			cpu.Init(onGBC);
 			ppu.Init(onGBC);
 			rom.Init();
+
+			lastLCDEnable = memory.regs.lcdcEnable;
 
 			//Clear the display
 			display.Clear();
@@ -164,25 +168,43 @@ namespace LunaGB.Core{
 				cpu.Step();
 				
 				//Update the different cycle variables by the number of cycles the CPU took.
-				int cyclesTaken = cpu.cycles;
+				//If double speed is active, divide the number by 2.
+				int cyclesTaken = cpu.gbcCpuSpeed ? cpu.cycles/2 : cpu.cycles;
 				cycles += cyclesTaken;
 
-				bool ppuActive = memory.regs.lcdcEnable == 1 ? true : false;
+				
+				int lcdcEnable = memory.regs.lcdcEnable;
+				//Check if the LCD was reenabled
+				//TODO: when the ppu is reenabled, for the first frame it should be put into
+				//"mode 0" (a broken version of mode 2) that's 4 dots shorter, and OAM isn't
+				//locked. This only applies for the first scanline, so maybe start from there?
+				//Instead of that for now, I can just set it to mode 2 probably
+				if(lastLCDEnable == 0 && lcdcEnable == 1){
+					ppu.lcdReenabled = true;
+				}
+				lastLCDEnable = lcdcEnable;
 
 				//Step everything else by the number of cycles the CPU took.
 				for(int i = 0; i < cyclesTaken; i++){
-					//Step OAM DMA if currently doing an OAM DMA transfer
-					if(memory.doingDMATransfer){
-						memory.OAMDMAStep();
+					//If double speed is active, run the update functions twice
+					//to compensate.
+					for(int j = 0; j < (cpu.gbcCpuSpeed ? 2 : 1); j++){
+						//Step OAM DMA if currently doing an OAM DMA transfer
+						if(memory.doingDMATransfer){
+							memory.OAMDMAStep();
+						}
+
+						//Update DIV and TIMA registers
+						UpdateDIVAndTIMA();
+
+						//Step serial
+						serial.Step();
 					}
 
 					//Step the PPU if it's active
-					if(ppuActive){
+					if(lcdcEnable == 1){
 						ppu.Step();
 					}
-
-					//Update DIV and TIMA registers
-					UpdateDIVAndTIMA();
 
 					//Check if we've reached the end of the frame
 					if(ppu.finishedFrame){
@@ -190,8 +212,12 @@ namespace LunaGB.Core{
 						CheckJOYP();
 						//Render the screen, and keep the thread waiting until we're at the end of frame in actual time.
 						if(display.enabled) display.Render();
+						frameTime = sw.Elapsed.TotalMilliseconds;
 						if(Options.limitFrameRate){
 							//TODO: is there a better way to keep a thread waiting than this?
+							if(frameTime < msPerFrame){
+								Thread.Sleep((int)(msPerFrame - frameTime));
+							}
 							while(sw.Elapsed.TotalMilliseconds < msPerFrame){
 								Thread.Sleep(0);
 							}
@@ -232,7 +258,7 @@ namespace LunaGB.Core{
 		int[] tacClockIncrementFrequencyCycles = new int[]{1024,16,64,256};
 
 		void UpdateDIVAndTIMA(){
-			if(!cpu.stopMode) divCycleTimer++;
+			if(!cpu.stopMode)divCycleTimer++;
 
 			//Check if DIV should be incremented
 			if(divCycleTimer == 256){
@@ -286,22 +312,30 @@ namespace LunaGB.Core{
 		}
 
 		void CheckJOYP(){
-			byte JOYP = memory.GetIOReg(IORegister.P1);
+			int P10 = memory.regs.P10;
+			int P11 = memory.regs.P11;
+			int P12 = memory.regs.P12;
+			int P13 = memory.regs.P13;
 
 			//Check if any of bits 0-3 of JOYP register went from high to low
-			for(int i = 0; i < 4; i++){
-				if(((prevJOYP >> i) & 1) == 1 && ((JOYP >> i) & 1) == 0){
-					//If so, request a joypad interrupt
-					memory.RequestInterrupt(Interrupt.Joypad);
-					//If stop mode is active, disable it
-					if(cpu.stopMode == true){
-						cpu.stopMode = false;
-					}
-					break;
+			if((prevP10 == 1 && P10 == 0) || (prevP11 == 1 && P11 == 0) || (prevP12 == 1 && P12 == 0)
+			|| (prevP13 == 1 && P13 == 0)){
+				//If so, request a joypad interrupt
+				memory.RequestInterrupt(Interrupt.Joypad);
+				//If stop mode is active, disable it
+				if(cpu.stopMode == true){
+					cpu.stopMode = false;
 				}
 			}
 
-			prevJOYP = JOYP;
+			UpdatePreviousJoypadFlags();
+		}
+
+		void UpdatePreviousJoypadFlags(){
+			prevP10 = memory.regs.P10;
+			prevP11 = memory.regs.P11;
+			prevP12 = memory.regs.P12;
+			prevP13 = memory.regs.P13;
 		}
 
 		public void PrintDebugInfo()
@@ -318,18 +352,18 @@ namespace LunaGB.Core{
 		}
 
 		string GetEmulatorStateInfo(){
-			byte div = memory.GetIOReg(IORegister.DIV);
-			byte tma = memory.GetIOReg(IORegister.TMA);
-			byte tima = memory.GetIOReg(IORegister.TIMA);
-			byte IF = memory.GetIOReg(IORegister.IF);
+			byte div = memory.regs.DIV;
+			byte tma = memory.regs.TMA;
+			byte tima = memory.regs.TIMA;
+			byte IF = memory.regs.IF;
 
 			StringBuilder sb = new StringBuilder();
 			sb.AppendLine(string.Format("AF = {0:X4}, BC = {1:X4}, DE = {2:X4}, HL = {3:X4}",cpu.AF, cpu.BC, cpu.DE, cpu.HL));
 			sb.AppendLine(string.Format("PC = {0:X4}, SP = {1:X4}, IE = {2:X2}, IF = {3:X2}, IME = {4}",cpu.pc, cpu.sp, cpu.IE, IF, cpu.ime));
-			sb.AppendLine(string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}", cpu.flagN, cpu.flagZ, cpu.flagC, cpu.flagH));
-			sb.AppendLine(string.Format("LY = {0:X2}", ppu.ly));
-			sb.AppendLine(string.Format("DIV = {0:X2}, TMA = {1:X2}, TIMA = {2:X2}", div, tma, tima));
-			sb.AppendLine("Cycles: " + cycles + "\n");
+			//sb.AppendLine(string.Format("Flags (F): N = {0} Z = {1} C = {2} H = {3}", cpu.flagN, cpu.flagZ, cpu.flagC, cpu.flagH));
+			//sb.AppendLine(string.Format("LY = {0:X2}", ppu.ly));
+			//sb.AppendLine(string.Format("DIV = {0:X2}, TMA = {1:X2}, TIMA = {2:X2}", div, tma, tima));
+			//sb.AppendLine("Cycles: " + cycles + "\n");
 			return sb.ToString();
 		}
 
