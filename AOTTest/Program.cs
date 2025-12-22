@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Diagnostics;
-using LunaGB.Core;
-using LunaGB.Core.Debug;
+using Tsukimi.Core;
+using Tsukimi.Core.LunaGB;
 
 namespace AOTTest {
 	public class Program{
-		public static Emulator? emu;
+		public static LunaGBEmulator? emu;
 		public static int totalFrameTime;
 		public static int framesRendered;
 
 		public static void Main(string[] args){
-			emu = new Emulator(new LunaGB.Core.Debug.Debugger());
+			emu = new LunaGBEmulator(new Tsukimi.Debug.Debugger());
 			emu.display.OnRender += PrintFrameTime;
-			emu.LoadROM("pokeblue.gb");
+			emu.LoadFile("pokeblue.gb");
 
 			CancellationTokenSource ct = new CancellationTokenSource();
 			Thread emuThread = new Thread(() => emu.Start(ct.Token));
@@ -34,7 +34,7 @@ namespace AOTTest {
 		public static void PrintFrameTime(){
 			if(emu != null){
 				//Console.WriteLine("Frame took {0} ms", emu.frameTime);
-				totalFrameTime += (int)emu.frameTime;
+				totalFrameTime += (int)emu.averageFrameTime;
 				framesRendered++;
 			}
 		}
