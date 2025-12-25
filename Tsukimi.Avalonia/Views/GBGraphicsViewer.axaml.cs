@@ -4,7 +4,8 @@ using Avalonia.Media.Imaging;
 using System;
 using System.IO;
 using Tsukimi.Graphics;
-using Tsukimi.Core.LunaGB;
+using Tsukimi.Core;
+using LunaGB;
 
 namespace Tsukimi.Avalonia.Views
 {

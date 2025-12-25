@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Tsukimi</RootNamespace>
+	<ImplicitUsings>disable</ImplicitUsings>
 	<Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -15,12 +16,9 @@
     <None Remove="Core\Cartridges\**" />
     <None Remove="Tests\**" />
   </ItemGroup>
-
   <ItemGroup>
-    <Folder Include="Enums\" />
-    <Folder Include="Graphics\" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <ProjectReference Include="..\LunaCube\LunaCube.csproj" />
+    <ProjectReference Include="..\LunaGB\LunaGB.csproj" />
+    <ProjectReference Include="..\Tsukimi.Util\Tsukimi.Util.csproj" />
   </ItemGroup>
 </Project>

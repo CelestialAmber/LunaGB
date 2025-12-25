@@ -6,15 +6,16 @@ using Avalonia.Threading;
 using Avalonia.Interactivity;
 using System;
 using System.Threading;
+using System.Linq;
 using System.Collections.Generic;
-using Tsukimi.Graphics;
 using Tsukimi.Avalonia.Views;
 using System.Timers;
 using Avalonia.Platform.Storage;
 using Tsukimi.Avalonia.Utils;
-using System.Linq;
-using Tsukimi.Core.LunaGB;
+using Tsukimi.Core;
+using Tsukimi.Graphics;
 using Tsukimi.Debug;
+using LunaGB;
 
 namespace Tsukimi.Avalonia {
 	public partial class MainWindow : Window {

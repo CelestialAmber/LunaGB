@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using Tsukimi.Core;
-using Tsukimi.Core.LunaGB;
 
 namespace AOTTest {
 	public class Program{

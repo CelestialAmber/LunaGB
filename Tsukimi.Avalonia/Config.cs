@@ -1,6 +1,6 @@
 using Avalonia.Input;
 using System.Collections.Generic;
-using Tsukimi.Core.LunaGB;
+using LunaGB;
 
 namespace Tsukimi.Avalonia {
 	public class Config {

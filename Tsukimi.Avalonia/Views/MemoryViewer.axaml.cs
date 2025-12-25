@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Tsukimi.Core.LunaGB;
+using LunaGB;
 using System;
 using System.Text;
 using Tsukimi.Core;
